@@ -10,10 +10,7 @@ class TimerPage extends StatefulWidget {
   State<TimerPage> createState() => _TimerPageState();
 }
 
-enum TimerState {
-  focus,
-  breakTime,
-}
+enum TimerState { focus, breakTime }
 
 class _TimerPageState extends State<TimerPage> {
   Timer? _timer;
@@ -100,9 +97,7 @@ class _TimerPageState extends State<TimerPage> {
   }
 
   String _getStateLabel() {
-    return _currentState == TimerState.focus
-        ? 'Tiempo de enfoque'
-        : 'Descanso';
+    return _currentState == TimerState.focus ? 'Tiempo de enfoque' : 'Descanso';
   }
 
   Color _getStateColor() {
@@ -217,10 +212,7 @@ class _TimerPageState extends State<TimerPage> {
                 const SizedBox(height: 32),
                 Text(
                   'Tiempo de enfoque: ${widget.focusMinutes} minutos',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
+                  style: const TextStyle(fontSize: 16, color: Colors.grey),
                 ),
               ],
             ],
@@ -230,5 +222,3 @@ class _TimerPageState extends State<TimerPage> {
     );
   }
 }
-
-
