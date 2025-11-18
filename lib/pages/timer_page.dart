@@ -97,7 +97,7 @@ class _TimerPageState extends State<TimerPage> {
   }
 
   String _getStateLabel() {
-    return _currentState == TimerState.focus ? 'Tiempo de enfoque' : 'Descanso';
+    return _currentState == TimerState.focus ? 'Focus Time' : 'Break Time';
   }
 
   Color _getStateColor() {
@@ -108,8 +108,19 @@ class _TimerPageState extends State<TimerPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pomodoro MX'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _currentState == TimerState.focus
+                  ? Icons.timer
+                  : Icons.coffee,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            const Text('Random Pomodoro'),
+          ],
+        ),
       ),
       body: Center(
         child: Padding(
@@ -117,101 +128,180 @@ class _TimerPageState extends State<TimerPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: _getStateColor().withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: _getStateColor().withOpacity(0.3),
-                    width: 2,
+              // 진행률 원형 표시기 추가
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: 280,
+                    height: 280,
+                    child: CircularProgressIndicator(
+                      value: _currentState == TimerState.focus
+                          ? (_originalFocusSeconds - _remainingSeconds) /
+                              _originalFocusSeconds
+                          : (_originalBreakSeconds - _remainingSeconds) /
+                              _originalBreakSeconds,
+                      strokeWidth: 8,
+                      backgroundColor: _getStateColor().withOpacity(0.2),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        _getStateColor(),
+                      ),
+                    ),
                   ),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      _getStateLabel(),
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: _getStateColor(),
+                  Container(
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          _getStateColor().withOpacity(0.15),
+                          _getStateColor().withOpacity(0.05),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      _formatTime(_remainingSeconds),
-                      style: TextStyle(
-                        fontSize: 64,
-                        fontWeight: FontWeight.bold,
-                        color: _getStateColor(),
-                        fontFeatures: [const FontFeature.tabularFigures()],
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _getStateColor().withOpacity(0.3),
+                        width: 3,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _getStateColor().withOpacity(0.2),
+                          blurRadius: 20,
+                          spreadRadius: 5,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _currentState == TimerState.focus
+                              ? Icons.psychology
+                              : Icons.coffee,
+                          size: 40,
+                          color: _getStateColor(),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _getStateLabel(),
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: _getStateColor(),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _formatTime(_remainingSeconds),
+                          style: TextStyle(
+                            fontSize: 56,
+                            fontWeight: FontWeight.bold,
+                            color: _getStateColor(),
+                            fontFeatures: [
+                              const FontFeature.tabularFigures(),
+                            ],
+                            letterSpacing: 2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 48),
-              Row(
+              // 모바일 터치 최적화: 세로 배치로 변경하여 더 큰 터치 영역 제공
+              Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  ElevatedButton(
-                    onPressed: _isRunning ? null : _startTimer,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 16,
+                  // 시작/일시정지 버튼 - 그라데이션 효과
+                  Container(
+                    width: double.infinity,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: _isRunning
+                            ? [
+                                Colors.orange.shade400,
+                                Colors.orange.shade600,
+                              ]
+                            : [
+                                Colors.deepPurple,
+                                Colors.blue,
+                              ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: Colors.grey.shade300,
-                      textStyle: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (_isRunning
+                                  ? Colors.orange
+                                  : Colors.deepPurple)
+                              .withOpacity(0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: _isRunning ? _pauseTimer : _startTimer,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        elevation: 0,
+                      ),
+                      icon: Icon(
+                        _isRunning ? Icons.pause : Icons.play_arrow,
+                        size: 28,
+                        color: Colors.white,
+                      ),
+                      label: Text(
+                        _isRunning ? 'Pause' : 'Start',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                    child: const Text('Iniciar'),
                   ),
-                  const SizedBox(width: 16),
-                  ElevatedButton(
-                    onPressed: _isRunning ? _pauseTimer : null,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 16,
+                  const SizedBox(height: 16),
+                  // 재시작 버튼
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: OutlinedButton.icon(
+                      onPressed: _resetTimer,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Colors.red, width: 2),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(28),
+                        ),
                       ),
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: Colors.grey.shade300,
-                      textStyle: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    child: const Text('Pausar'),
-                  ),
-                  const SizedBox(width: 16),
-                  ElevatedButton(
-                    onPressed: _resetTimer,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 16,
-                      ),
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      textStyle: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                      icon: const Icon(Icons.refresh, size: 24),
+                      label: const Text(
+                        'Reset',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
-                    child: const Text('Reiniciar'),
                   ),
                 ],
               ),
               if (_currentState == TimerState.focus) ...[
                 const SizedBox(height: 32),
                 Text(
-                  'Tiempo de enfoque: ${widget.focusMinutes} minutos',
+                  'Focus time: ${widget.focusMinutes} minutes',
                   style: const TextStyle(fontSize: 16, color: Colors.grey),
                 ),
               ],

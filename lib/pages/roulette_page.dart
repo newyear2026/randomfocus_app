@@ -106,34 +106,100 @@ class _RoulettePageState extends State<RoulettePage> {
 
   @override
   Widget build(BuildContext context) {
-    final attemptsText = 'Intentos de hoy: $_spinsUsed / $_maxSpinsPerDay';
+    final attemptsText = 'Attempts today: $_spinsUsed / $_maxSpinsPerDay';
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pomodoro MX'),
-        backgroundColor: const Color(0xFFA7D489), // 연한 라임
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.casino, size: 24),
+            const SizedBox(width: 8),
+            const Text('Random Pomodoro'),
+          ],
+        ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Center(
+          ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
-                    '🎡 Tu rueda de estudio',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  const CircularProgressIndicator(strokeWidth: 3),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Loading...',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Gira para elegir tu tiempo',
-                    style: TextStyle(color: Colors.grey),
+                ],
+              ),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 20),
+                  // 제목 섹션
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.deepPurple.withOpacity(0.1),
+                          Colors.blue.withOpacity(0.1),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text(
+                          '🎡 Random Timer',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Spin to choose your focus time',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 32),
-                  // 🔵 여기부터 진짜 룰렛 UI
-                  SizedBox(
-                    height: 260,
-                    width: 260,
-                    child: FortuneWheel(
+                  const SizedBox(height: 40),
+                  // 룰렛 UI with 그림자 효과
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 20,
+                          spreadRadius: 5,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: SizedBox(
+                      height: 280,
+                      width: 280,
+                      child: FortuneWheel(
                       selected: _wheelController.stream,
                       onAnimationEnd: _handleWheelAnimationEnd,
                       indicators: const <FortuneIndicator>[
@@ -161,66 +227,170 @@ class _RoulettePageState extends State<RoulettePage> {
                             ),
                           )
                           .toList(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  // 남은 횟수 - 개선된 디자인
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.deepPurple.withOpacity(0.1),
+                          Colors.blue.withOpacity(0.1),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: Colors.deepPurple.withOpacity(0.3),
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.deepPurple.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.local_fire_department,
+                          color: Colors.deepPurple,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          attemptsText,
+                          style: TextStyle(
+                            color: Colors.deepPurple,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  // Gira 버튼 - 그라데이션 효과
+                  Container(
+                    width: double.infinity,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      gradient: _hasSpinsLeft
+                          ? LinearGradient(
+                              colors: [
+                                Colors.deepPurple,
+                                Colors.blue,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null,
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: _hasSpinsLeft
+                          ? [
+                              BoxShadow(
+                                color: Colors.deepPurple.withOpacity(0.4),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: ElevatedButton(
+                      onPressed: _hasSpinsLeft ? _onSpinPressed : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _hasSpinsLeft
+                            ? Colors.transparent
+                            : Colors.grey.shade300,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.autorenew,
+                            color: _hasSpinsLeft ? Colors.white : Colors.grey,
+                            size: 28,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Spin',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1,
+                              color: _hasSpinsLeft ? Colors.white : Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 32),
-                  // 남은 횟수
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE4F7E4),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: const Color(0xFF8AC68A)),
-                    ),
-                    child: Text(
-                      attemptsText,
-                      style: const TextStyle(
-                        color: Color(0xFF2F7D32),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  // Gira 버튼
-                  ElevatedButton(
-                    onPressed: _hasSpinsLeft ? _onSpinPressed : null,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 40,
-                        vertical: 14,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                    ),
-                    child: const Text(
-                      'Girar',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
                   if (!_hasSpinsLeft)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
+                        horizontal: 24,
+                        vertical: 20,
                       ),
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF3CD),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFFFEE58)),
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.orange.withOpacity(0.1),
+                            Colors.amber.withOpacity(0.1),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.orange.withOpacity(0.3),
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.orange.withOpacity(0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      child: const Text(
-                        'Hoy ya usaste tus intentos. ¡Buen trabajo!',
-                        style: TextStyle(color: Color(0xFFB8860B)),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.celebration,
+                            color: Colors.orange.shade700,
+                            size: 28,
+                          ),
+                          const SizedBox(width: 12),
+                          const Flexible(
+                            child: Text(
+                              'You\'ve used all attempts today.\nGreat work!',
+                              style: TextStyle(
+                                color: Colors.orange,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -228,21 +398,21 @@ class _RoulettePageState extends State<RoulettePage> {
   }
 }
 
-/// 시간별로 멕시칸 느낌 색을 다르게 주기
+/// 시간별로 다른 색상 할당
 Color _colorForTime(int minutes) {
   switch (minutes) {
     case 25:
-      return const Color(0xFFFF3D7F); // Fiesta Pink
+      return Colors.pink.shade400;
     case 35:
-      return const Color(0xFFFFBE0B); // Mango Yellow
+      return Colors.amber.shade600;
     case 45:
-      return const Color(0xFF6CC551); // Lime Green
+      return Colors.green.shade500;
     case 50:
-      return const Color(0xFF00B3A4); // Turquoise
+      return Colors.cyan.shade500;
     case 60:
-      return const Color(0xFF264653); // Cobalt-ish Blue
+      return Colors.blue.shade700;
     case 90:
-      return const Color(0xFFE4007C); // Mexican Pink
+      return Colors.purple.shade600;
     default:
       return Colors.teal;
   }
