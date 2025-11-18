@@ -13,15 +13,14 @@ class RoulettePage extends StatefulWidget {
 }
 
 class _RoulettePageState extends State<RoulettePage> {
-  final _times = [25, 35, 45, 50, 60, 90];
+  // 테스트용: 초 단위로 변경 (원래는 분 단위였음: [25, 35, 45, 50, 60, 90])
+  final _times = [25, 35, 45, 50, 60, 90]; // 초 단위
   late StreamController<int> _wheelController;
   int _spinsUsed = 0;
   int _maxSpinsPerDay = 2;
   bool _isLoading = true;
   int? _pendingIndex; // 룰렛 결과 (애니메이션 끝난 뒤 사용)
   Timer? _dateCheckTimer; // 자정 체크용 타이머
-
-  bool get _hasSpinsLeft => _spinsUsed < _maxSpinsPerDay;
 
   @override
   void initState() {
@@ -67,10 +66,17 @@ class _RoulettePageState extends State<RoulettePage> {
   }
 
   void _onSpinPressed() {
-    if (!_hasSpinsLeft || _isLoading) return;
+    // 테스트용: _hasSpinsLeft 체크 제거
+    if (_isLoading) {
+      print('Spin button pressed but isLoading is true');
+      return;
+    }
 
+    print('Spin button pressed! Starting spin...');
+    
     // 룰렛에서 선택될 index
     final index = Random().nextInt(_times.length);
+    print('Selected index: $index, time: ${_times[index]}');
 
     setState(() {
       _pendingIndex = index;
@@ -78,12 +84,13 @@ class _RoulettePageState extends State<RoulettePage> {
 
     // 룰렛 회전 시작
     _wheelController.add(index);
+    print('Wheel controller event sent');
   }
 
   void _handleWheelAnimationEnd() async {
     if (_pendingIndex == null) return;
 
-    final selectedMinutes = _times[_pendingIndex!];
+    final selectedMinutes = _times[_pendingIndex!]; // 초 단위
     // 스핀 사용 전에 기회가 남아있는지 확인
     final canSpinAgain = _spinsUsed < _maxSpinsPerDay - 1;
 
@@ -155,7 +162,7 @@ class _RoulettePageState extends State<RoulettePage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'minutes',
+                    'seconds', // 테스트용: 초 단위
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.grey.shade600,
@@ -312,27 +319,35 @@ class _RoulettePageState extends State<RoulettePage> {
                 ],
               ),
             )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 8.0),
-              child: Column(
-                children: [
-                  const SizedBox(height: 20),
-                  // 메인 카드: 룰렛 + Attempts + Spin 버튼
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.deepPurple.withOpacity(0.1),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 8.0),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight - 40,
                     ),
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        const SizedBox(height: 20),
+                        // 메인 카드: 룰렛 + Attempts + Spin 버튼
+                        Container(
+                          padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.deepPurple.withOpacity(0.1),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
                         // 룰렛
                         Container(
                           decoration: BoxDecoration(
@@ -416,20 +431,21 @@ class _RoulettePageState extends State<RoulettePage> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        // Spin 버튼 - 터치 영역 최적화
+                        // Spin 버튼 - 터치 영역 최적화 (테스트용: 항상 활성화)
                         SizedBox(
                           width: double.infinity,
                           height: 60,
                           child: ElevatedButton(
-                            onPressed: (_hasSpinsLeft && !_isLoading)
-                                ? _onSpinPressed
-                                : null,
+                            onPressed: _isLoading ? null : () {
+                              print('Button onPressed called');
+                              _onSpinPressed();
+                            },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.deepPurple,
                               disabledBackgroundColor: Colors.grey.shade300,
                               foregroundColor: Colors.white,
                               disabledForegroundColor: Colors.grey,
-                              elevation: _hasSpinsLeft ? 4 : 0,
+                              elevation: !_isLoading ? 4 : 0,
                               shadowColor: Colors.deepPurple.withOpacity(0.3),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(28),
@@ -455,12 +471,15 @@ class _RoulettePageState extends State<RoulettePage> {
                             ),
                           ),
                         ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                ],
-              ),
+                );
+              },
             ),
     );
   }

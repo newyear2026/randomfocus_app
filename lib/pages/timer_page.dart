@@ -31,7 +31,8 @@ class _TimerPageState extends State<TimerPage> {
   @override
   void initState() {
     super.initState();
-    _originalFocusSeconds = widget.focusMinutes * 60;
+    // 테스트용: 초 단위로 변경 (원래는 widget.focusMinutes * 60)
+    _originalFocusSeconds = widget.focusMinutes; // 초 단위로 직접 사용
     _remainingSeconds = _originalFocusSeconds;
     _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
   }
@@ -183,6 +184,7 @@ class _TimerPageState extends State<TimerPage> {
   }
 
   String _formatTime(int seconds) {
+    // 분:초 형식으로 표시
     final minutes = seconds ~/ 60;
     final secs = seconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
@@ -239,7 +241,7 @@ class _TimerPageState extends State<TimerPage> {
               ),
             ),
             Text(
-              '${widget.focusMinutes} minutes',
+              '${widget.focusMinutes} seconds', // 테스트용: 초 단위
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.white.withOpacity(0.9),
