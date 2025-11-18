@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../widgets/slide_in_widget.dart';
+import '../services/language_service.dart';
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({super.key});
+  final Function(Locale)? onLanguageChanged;
+
+  const SettingsPage({super.key, this.onLanguageChanged});
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -10,6 +13,76 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   final ScrollController _scrollController = ScrollController();
+  String _currentLanguage = 'en';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentLanguage();
+  }
+
+  Future<void> _loadCurrentLanguage() async {
+    final language = await LanguageService.getSavedLanguage();
+    if (mounted) {
+      setState(() {
+        _currentLanguage = language;
+      });
+    }
+  }
+
+  Future<void> _showLanguageDialog() async {
+    final selectedLanguage = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Language'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: LanguageService.supportedLocales.map((locale) {
+            final languageCode = locale.languageCode;
+            final languageName = LanguageService.languageNames[languageCode] ?? languageCode;
+            final isSelected = _currentLanguage == languageCode;
+
+            return ListTile(
+              title: Text(languageName),
+              leading: Radio<String>(
+                value: languageCode,
+                groupValue: _currentLanguage,
+                onChanged: (value) {
+                  Navigator.pop(context, value);
+                },
+              ),
+              selected: isSelected,
+              onTap: () {
+                Navigator.pop(context, languageCode);
+              },
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+
+    if (selectedLanguage != null && selectedLanguage != _currentLanguage) {
+      final locale = Locale(selectedLanguage);
+      await LanguageService.saveLanguage(selectedLanguage);
+      
+      if (mounted) {
+        setState(() {
+          _currentLanguage = selectedLanguage;
+        });
+        
+        // 언어 변경 콜백 호출
+        if (widget.onLanguageChanged != null) {
+          widget.onLanguageChanged!(locale);
+        }
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -82,6 +155,41 @@ class _SettingsPageState extends State<SettingsPage> {
                 vertical: 8,
               ),
               leading: const Icon(
+                Icons.language,
+                size: 28,
+              ),
+              title: const Text(
+                'Language',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: Text(
+                LanguageService.languageNames[_currentLanguage] ?? 'English',
+                style: const TextStyle(fontSize: 14),
+              ),
+              trailing: const Icon(Icons.chevron_right, size: 28),
+              minVerticalPadding: 12,
+              onTap: _showLanguageDialog,
+            ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SlideInWidget(
+            index: 3,
+            child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 8,
+              ),
+              leading: const Icon(
                 Icons.info_outline,
                 size: 28,
               ),
@@ -122,7 +230,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const SizedBox(height: 8),
           SlideInWidget(
-            index: 2,
+            index: 4,
             child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(

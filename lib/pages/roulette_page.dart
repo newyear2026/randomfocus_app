@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'timer_page.dart';
+import '../services/spin_storage.dart';
 
 class RoulettePage extends StatefulWidget {
   const RoulettePage({super.key});
@@ -13,12 +13,13 @@ class RoulettePage extends StatefulWidget {
 }
 
 class _RoulettePageState extends State<RoulettePage> {
-  static const _maxSpinsPerDay = 2;
   final _times = [25, 35, 45, 50, 60, 90];
   late StreamController<int> _wheelController;
   int _spinsUsed = 0;
+  int _maxSpinsPerDay = 2;
   bool _isLoading = true;
   int? _pendingIndex; // 룰렛 결과 (애니메이션 끝난 뒤 사용)
+  Timer? _dateCheckTimer; // 자정 체크용 타이머
 
   bool get _hasSpinsLeft => _spinsUsed < _maxSpinsPerDay;
 
@@ -27,38 +28,42 @@ class _RoulettePageState extends State<RoulettePage> {
     super.initState();
     _wheelController = StreamController<int>();
     _loadSpinInfo();
+    _startDateCheckTimer();
   }
 
   @override
   void dispose() {
     _wheelController.close();
+    _dateCheckTimer?.cancel();
     super.dispose();
   }
 
-  Future<void> _loadSpinInfo() async {
-    final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now();
-    final todayStr =
-        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-    final savedDate = prefs.getString('spin_date');
-    var used = prefs.getInt('spin_used') ?? 0;
-
-    if (savedDate != todayStr) {
-      // 날짜 바뀌면 초기화
-      await prefs.setString('spin_date', todayStr);
-      await prefs.setInt('spin_used', 0);
-      used = 0;
-    }
-
-    setState(() {
-      _spinsUsed = used;
-      _isLoading = false;
+  /// 자정 체크 타이머 시작 (1분마다 체크)
+  void _startDateCheckTimer() {
+    _dateCheckTimer = Timer.periodic(const Duration(minutes: 1), (timer) async {
+      final isDateChanged = await SpinStorage.isDateChanged();
+      if (isDateChanged && mounted) {
+        // 자정이 지났으면 자동으로 리셋
+        _loadSpinInfo();
+      }
     });
   }
 
-  Future<void> _saveSpinsUsed(int value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('spin_used', value);
+  /// 스핀 정보 로드 (SpinStorage 서비스 사용)
+  Future<void> _loadSpinInfo() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final spinData = await SpinStorage.getSpinData();
+
+    if (mounted) {
+      setState(() {
+        _spinsUsed = spinData['used'] as int;
+        _maxSpinsPerDay = spinData['maxSpins'] as int;
+        _isLoading = false;
+      });
+    }
   }
 
   void _onSpinPressed() {
@@ -79,21 +84,21 @@ class _RoulettePageState extends State<RoulettePage> {
     if (_pendingIndex == null) return;
 
     final selectedMinutes = _times[_pendingIndex!];
+    // 스핀 사용 전에 기회가 남아있는지 확인
+    final canSpinAgain = _spinsUsed < _maxSpinsPerDay - 1;
 
-    // 스핀 사용 처리
-    setState(() {
-      _spinsUsed++;
-    });
-    await _saveSpinsUsed(_spinsUsed);
+    // 스핀 사용 처리 (SpinStorage 서비스 사용)
+    final spinData = await SpinStorage.useSpin();
 
-    // 타이머 페이지로 이동
     if (!mounted) return;
 
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => TimerPage(focusMinutes: selectedMinutes),
-      ),
-    );
+    // 상태 업데이트
+    setState(() {
+      _spinsUsed = spinData['used'] as int;
+    });
+
+    // 팝업 표시
+    await _showResultDialog(selectedMinutes, canSpinAgain);
 
     // 타이머 페이지에서 돌아왔을 때 스핀 데이터 다시 로드
     _loadSpinInfo();
@@ -104,33 +109,203 @@ class _RoulettePageState extends State<RoulettePage> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final attemptsText = 'Attempts today: $_spinsUsed / $_maxSpinsPerDay';
-
-    return Scaffold(
-      appBar: AppBar(
+  Future<void> _showResultDialog(int selectedMinutes, bool canSpinAgain) async {
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.casino, size: 24),
-            const SizedBox(width: 8),
-            const Text('Random Pomodoro'),
+            Icon(
+              Icons.celebration,
+              color: _colorForTime(selectedMinutes),
+              size: 32,
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Result',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              decoration: BoxDecoration(
+                color: _colorForTime(selectedMinutes).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _colorForTime(selectedMinutes).withOpacity(0.3),
+                  width: 2,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    '$selectedMinutes',
+                    style: TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.bold,
+                      color: _colorForTime(selectedMinutes),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'minutes',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            if (canSpinAgain)
+              Text(
+                'You have 1 more chance to spin!',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              )
+            else
+              Column(
+                children: [
+                  Text(
+                    'This is your last attempt!',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.orange.shade700,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Starting timer now...',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+          ],
+        ),
+        actions: [
+          if (canSpinAgain) ...[
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'spin_again'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.deepPurple,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
+              child: const Text(
+                'Spin Again',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, 'start_timer'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepPurple,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+              ),
+            ),
+            child: Text(
+              canSpinAgain ? 'Start Timer' : 'Continue',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (result == 'spin_again') {
+      // 다시 스핀하기 - 스핀 사용 취소
+      await SpinStorage.cancelSpin();
+      setState(() {
+        _spinsUsed = (_spinsUsed - 1).clamp(0, _maxSpinsPerDay);
+        _pendingIndex = null;
+      });
+      _onSpinPressed();
+    } else if (result == 'start_timer' || result == null) {
+      // 타이머 시작
+      if (!mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => TimerPage(focusMinutes: selectedMinutes),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final attemptsText = '$_spinsUsed / $_maxSpinsPerDay';
+
+    return Scaffold(
+      backgroundColor: Colors.deepPurple.shade50,
+      appBar: AppBar(
+        backgroundColor: Colors.deepPurple,
+        elevation: 0,
+        title: Column(
+          children: [
+            const Text(
+              'Random Pomodoro',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            Text(
+              'Spin to choose your focus time',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.white.withOpacity(0.9),
+                fontWeight: FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+        centerTitle: true,
       ),
       body: _isLoading
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const CircularProgressIndicator(strokeWidth: 3),
+                  const CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Colors.deepPurple,
+                    ),
+                  ),
                   const SizedBox(height: 24),
                   Text(
                     'Loading...',
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.grey.shade600,
+                      color: Colors.deepPurple.shade700,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -138,259 +313,152 @@ class _RoulettePageState extends State<RoulettePage> {
               ),
             )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 8.0),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 20),
-                  // 제목 섹션
+                  // 메인 카드: 룰렛 + Attempts + Spin 버튼
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.deepPurple.withOpacity(0.1),
-                          Colors.blue.withOpacity(0.1),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Column(
-                      children: [
-                        const Text(
-                          '🎡 Random Timer',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Spin to choose your focus time',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  // 룰렛 UI with 그림자 효과
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 20,
-                          spreadRadius: 5,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: SizedBox(
-                      height: 280,
-                      width: 280,
-                      child: FortuneWheel(
-                      selected: _wheelController.stream,
-                      onAnimationEnd: _handleWheelAnimationEnd,
-                      indicators: const <FortuneIndicator>[
-                        FortuneIndicator(
-                          alignment: Alignment.topCenter,
-                          child: TriangleIndicator(color: Colors.white),
-                        ),
-                      ],
-                      items: _times
-                          .map(
-                            (t) => FortuneItem(
-                              child: Text(
-                                '$t',
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              style: FortuneItemStyle(
-                                color: _colorForTime(t),
-                                borderColor: Colors.white,
-                                borderWidth: 2,
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  // 남은 횟수 - 개선된 디자인
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.deepPurple.withOpacity(0.1),
-                          Colors.blue.withOpacity(0.1),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(28),
-                      border: Border.all(
-                        color: Colors.deepPurple.withOpacity(0.3),
-                        width: 2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.deepPurple.withOpacity(0.2),
-                          blurRadius: 8,
+                          color: Colors.deepPurple.withOpacity(0.1),
+                          blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
                       ],
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                    child: Column(
                       children: [
-                        Icon(
-                          Icons.local_fire_department,
-                          color: Colors.deepPurple,
-                          size: 24,
+                        // 룰렛
+                        Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.deepPurple.withOpacity(0.15),
+                                blurRadius: 16,
+                                spreadRadius: 2,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: SizedBox(
+                            height: 260,
+                            width: 260,
+                            child: FortuneWheel(
+                              selected: _wheelController.stream,
+                              onAnimationEnd: _handleWheelAnimationEnd,
+                              indicators: const <FortuneIndicator>[
+                                FortuneIndicator(
+                                  alignment: Alignment.topCenter,
+                                  child: TriangleIndicator(color: Colors.white),
+                                ),
+                              ],
+                              items: _times
+                                  .map(
+                                    (t) => FortuneItem(
+                                      child: Text(
+                                        '$t',
+                                        style: const TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      style: FortuneItemStyle(
+                                        color: _colorForTime(t),
+                                        borderColor: Colors.white,
+                                        borderWidth: 2,
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          ),
                         ),
-                        const SizedBox(width: 12),
-                        Text(
-                          attemptsText,
-                          style: TextStyle(
-                            color: Colors.deepPurple,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            letterSpacing: 0.5,
+                        const SizedBox(height: 32),
+                        // Attempts 표시
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.deepPurple.shade50,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.deepPurple.withOpacity(0.2),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.local_fire_department,
+                                color: Colors.deepPurple.shade700,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Attempts today: $attemptsText',
+                                style: TextStyle(
+                                  color: Colors.deepPurple.shade700,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        // Spin 버튼 - 터치 영역 최적화
+                        SizedBox(
+                          width: double.infinity,
+                          height: 60,
+                          child: ElevatedButton(
+                            onPressed: (_hasSpinsLeft && !_isLoading)
+                                ? _onSpinPressed
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.deepPurple,
+                              disabledBackgroundColor: Colors.grey.shade300,
+                              foregroundColor: Colors.white,
+                              disabledForegroundColor: Colors.grey,
+                              elevation: _hasSpinsLeft ? 4 : 0,
+                              shadowColor: Colors.deepPurple.withOpacity(0.3),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(28),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.autorenew,
+                                  size: 26,
+                                ),
+                                const SizedBox(width: 12),
+                                const Text(
+                                  'Spin',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 40),
-                  // Gira 버튼 - 그라데이션 효과
-                  Container(
-                    width: double.infinity,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      gradient: _hasSpinsLeft
-                          ? LinearGradient(
-                              colors: [
-                                Colors.deepPurple,
-                                Colors.blue,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            )
-                          : null,
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: _hasSpinsLeft
-                          ? [
-                              BoxShadow(
-                                color: Colors.deepPurple.withOpacity(0.4),
-                                blurRadius: 12,
-                                offset: const Offset(0, 6),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: ElevatedButton(
-                      onPressed: _hasSpinsLeft ? _onSpinPressed : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _hasSpinsLeft
-                            ? Colors.transparent
-                            : Colors.grey.shade300,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.autorenew,
-                            color: _hasSpinsLeft ? Colors.white : Colors.grey,
-                            size: 28,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Spin',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1,
-                              color: _hasSpinsLeft ? Colors.white : Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  if (!_hasSpinsLeft)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 20,
-                      ),
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.orange.withOpacity(0.1),
-                            Colors.amber.withOpacity(0.1),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.orange.withOpacity(0.3),
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.orange.withOpacity(0.2),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.celebration,
-                            color: Colors.orange.shade700,
-                            size: 28,
-                          ),
-                          const SizedBox(width: 12),
-                          const Flexible(
-                            child: Text(
-                              'You\'ve used all attempts today.\nGreat work!',
-                              style: TextStyle(
-                                color: Colors.orange,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 8),
                 ],
               ),
             ),

@@ -4,7 +4,9 @@ import 'history_page.dart';
 import 'settings_page.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final Function(Locale)? onLanguageChanged;
+
+  const HomePage({super.key, this.onLanguageChanged});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -13,11 +15,13 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = [
-    const RoulettePage(),
-    const HistoryPage(),
-    const SettingsPage(),
-  ];
+  List<Widget> get _pages => [
+        const RoulettePage(),
+        const HistoryPage(),
+        SettingsPage(
+          onLanguageChanged: widget.onLanguageChanged,
+        ),
+      ];
 
   @override
   Widget build(BuildContext context) {
