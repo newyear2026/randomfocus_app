@@ -5,7 +5,6 @@ import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
 import 'timer_page.dart';
 import '../services/spin_storage.dart';
 import '../services/app_localizations.dart';
-import '../widgets/banner_ad_widget.dart';
 
 class RoulettePage extends StatefulWidget {
   const RoulettePage({super.key});
@@ -15,8 +14,8 @@ class RoulettePage extends StatefulWidget {
 }
 
 class _RoulettePageState extends State<RoulettePage> {
-  // 테스트용: 초 단위로 변경 (원래는 분 단위였음: [25, 35, 45, 50, 60, 90])
-  final _times = [5, 10, 15, 20, 25, 30]; // 초 단위 (테스트용)
+  // 룰렛 시간 옵션 (초 단위 - 테스트용)
+  final _times = [10, 15, 20, 30, 60, 90]; // 초 단위
   late StreamController<int> _wheelController;
   bool _isLoading = true;
   int? _pendingIndex; // 룰렛 결과 (애니메이션 끝난 뒤 사용)
@@ -93,12 +92,12 @@ class _RoulettePageState extends State<RoulettePage> {
   void _handleWheelAnimationEnd() async {
     if (_pendingIndex == null) return;
 
-    final selectedMinutes = _times[_pendingIndex!]; // 초 단위
+    final selectedSeconds = _times[_pendingIndex!]; // 초 단위
 
     if (!mounted) return;
 
     // 팝업 표시
-    await _showResultDialog(selectedMinutes);
+    await _showResultDialog(selectedSeconds);
 
     // 타이머 페이지에서 돌아왔을 때 스핀 데이터 다시 로드
     _loadSpinInfo();
@@ -109,7 +108,7 @@ class _RoulettePageState extends State<RoulettePage> {
     });
   }
 
-  Future<void> _showResultDialog(int selectedMinutes) async {
+  Future<void> _showResultDialog(int selectedSeconds) async {
     final result = await showDialog<String>(
       context: context,
       barrierDismissible: false,
@@ -145,26 +144,26 @@ class _RoulettePageState extends State<RoulettePage> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    _colorForTime(selectedMinutes).withOpacity(0.2),
-                    _colorForTime(selectedMinutes).withOpacity(0.12),
-                    _colorForTime(selectedMinutes).withOpacity(0.08),
+                    _colorForTime(selectedSeconds).withOpacity(0.2),
+                    _colorForTime(selectedSeconds).withOpacity(0.12),
+                    _colorForTime(selectedSeconds).withOpacity(0.08),
                   ],
                   stops: const [0.0, 0.5, 1.0],
                 ),
                 borderRadius: BorderRadius.circular(28),
                 border: Border.all(
-                  color: _colorForTime(selectedMinutes).withOpacity(0.5),
+                  color: _colorForTime(selectedSeconds).withOpacity(0.5),
                   width: 3,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: _colorForTime(selectedMinutes).withOpacity(0.3),
+                    color: _colorForTime(selectedSeconds).withOpacity(0.3),
                     blurRadius: 20,
                     spreadRadius: 0,
                     offset: const Offset(0, 6),
                   ),
                   BoxShadow(
-                    color: _colorForTime(selectedMinutes).withOpacity(0.15),
+                    color: _colorForTime(selectedSeconds).withOpacity(0.15),
                     blurRadius: 10,
                     spreadRadius: 0,
                     offset: const Offset(0, 3),
@@ -174,24 +173,24 @@ class _RoulettePageState extends State<RoulettePage> {
               child: Column(
                 children: [
                   Text(
-                    '$selectedMinutes',
+                    '$selectedSeconds',
                     style: TextStyle(
                       fontSize: 64,
                       fontWeight: FontWeight.w900,
-                      color: _colorForTime(selectedMinutes),
+                      color: _colorForTime(selectedSeconds),
                       letterSpacing: 2.0,
                       height: 1.1,
                       shadows: [
                         Shadow(
                           color: _colorForTime(
-                            selectedMinutes,
+                            selectedSeconds,
                           ).withOpacity(0.4),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
                         Shadow(
                           color: _colorForTime(
-                            selectedMinutes,
+                            selectedSeconds,
                           ).withOpacity(0.2),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
@@ -342,11 +341,11 @@ class _RoulettePageState extends State<RoulettePage> {
       });
       _onSpinPressed();
     } else if (result == 'start_timer' || result == null) {
-      // 타이머 시작
+      // 타이머 시작 (초 단위로 전달)
       if (!mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => TimerPage(focusMinutes: selectedMinutes),
+          builder: (_) => TimerPage(focusMinutes: selectedSeconds),
         ),
       );
     }
@@ -761,12 +760,6 @@ class _RoulettePageState extends State<RoulettePage> {
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 20),
-                            // 배너 광고
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 8.0),
-                              child: BannerAdWidget(),
-                            ),
                           ],
                         ),
                       ),
@@ -780,25 +773,16 @@ class _RoulettePageState extends State<RoulettePage> {
 }
 
 /// 시간별로 다른 색상 할당 (현대적인 그라데이션 색상)
-Color _colorForTime(int minutes) {
-  switch (minutes) {
-    case 5:
-      return const Color(0xFF6366F1); // 인디고
+/// 초 단위 값에 맞게 색상 할당 (테스트용)
+Color _colorForTime(int seconds) {
+  switch (seconds) {
     case 10:
-      return const Color(0xFF8B5CF6); // 보라
-    case 15:
-      return const Color(0xFFEC4899); // 핑크
-    case 20:
-      return const Color(0xFFF59E0B); // 앰버
-    case 25:
       return const Color(0xFFEF4444); // 레드
-    case 30:
+    case 15:
       return const Color(0xFF10B981); // 그린
-    case 35:
-      return const Color(0xFF06B6D4); // 시안
-    case 45:
+    case 20:
       return const Color(0xFF3B82F6); // 블루
-    case 50:
+    case 30:
       return const Color(0xFF6366F1); // 인디고
     case 60:
       return const Color(0xFF8B5CF6); // 보라

@@ -11,7 +11,16 @@ class AdIds {
   static const String iosInterstitialAdUnitId = 'ca-app-pub-2145694579976238/7133889173';
   
   // 플랫폼별 배너 광고 단위 ID 가져오기
+  // 테스트 모드: true로 설정하면 테스트 광고 ID 사용
+  // ⚠️ 출시 전 반드시 false로 변경하세요!
+  static const bool _useTestAds = true; // 테스트용: true, 출시 시 false
+  
   static String getBannerAdUnitId() {
+    // 테스트 광고 사용
+    if (_useTestAds) {
+      return testBannerAdUnitId;
+    }
+    
     if (Platform.isAndroid) {
       return androidBannerAdUnitId;
     } else if (Platform.isIOS) {
@@ -22,6 +31,11 @@ class AdIds {
   
   // 플랫폼별 전면 광고 단위 ID 가져오기
   static String getInterstitialAdUnitId() {
+    // 테스트 광고 사용
+    if (_useTestAds) {
+      return testInterstitialAdUnitId;
+    }
+    
     if (Platform.isAndroid) {
       return androidInterstitialAdUnitId;
     } else if (Platform.isIOS) {

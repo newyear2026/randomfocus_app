@@ -183,7 +183,7 @@ class _HistoryPageState extends State<HistoryPage> {
                   children: [
                     // 캘린더 - Flexible로 공간 조정
                     Flexible(
-                      flex: 3,
+                      flex: 4,
                       child: Container(
                         margin: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                         decoration: BoxDecoration(
@@ -330,12 +330,12 @@ class _HistoryPageState extends State<HistoryPage> {
                     ),
                     // 월간 통계 요약 - Flexible로 공간 조정
                     Flexible(
-                      flex: 2,
+                      flex: 3,
                       child: Container(
-                        margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                        margin: const EdgeInsets.fromLTRB(12, 0, 12, 4),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
-                          vertical: 10,
+                          vertical: 6,
                         ),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -360,92 +360,100 @@ class _HistoryPageState extends State<HistoryPage> {
                             ),
                           ],
                         ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // 첫 번째 행: 세션 통계
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildStatItem(
-                                    context,
-                                    AppLocalizations.of(
-                                          context,
-                                        )?.monthlySessions ??
-                                        'Monthly',
-                                    '${monthlyStats['totalSessions']}',
-                                    Icons.calendar_month,
-                                  ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              // 첫 번째 행: 세션 통계
+                              Flexible(
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildStatItem(
+                                        context,
+                                        AppLocalizations.of(
+                                              context,
+                                            )?.monthlySessions ??
+                                            'Monthly',
+                                        '${monthlyStats['totalSessions']}',
+                                        Icons.calendar_month,
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 1,
+                                      height: 30,
+                                      color: Colors.deepPurple.withOpacity(0.2),
+                                    ),
+                                    Expanded(
+                                      child: _buildStatItem(
+                                        context,
+                                        AppLocalizations.of(
+                                              context,
+                                            )?.dailySessions ??
+                                            'Today',
+                                        '$dailySessions',
+                                        Icons.today,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                Container(
-                                  width: 1,
-                                  height: 35,
-                                  color: Colors.deepPurple.withOpacity(0.2),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                height: 1,
+                                color: Colors.deepPurple.withOpacity(0.2),
+                              ),
+                              const SizedBox(height: 6),
+                              // 두 번째 행: Focused 시간 통계
+                              Flexible(
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildStatItem(
+                                        context,
+                                        AppLocalizations.of(
+                                              context,
+                                            )?.monthlyFocused ??
+                                            'Monthly Focused',
+                                        monthlyStats['totalHours'] > 0
+                                            ? '${monthlyStats['totalHours']}h ${monthlyStats['totalMinutes']}m'
+                                            : '${monthlyStats['totalMinutes']}m',
+                                        Icons.timer_outlined,
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 1,
+                                      height: 30,
+                                      color: Colors.deepPurple.withOpacity(0.2),
+                                    ),
+                                    Expanded(
+                                      child: _buildStatItem(
+                                        context,
+                                        AppLocalizations.of(
+                                              context,
+                                            )?.dailyFocused ??
+                                            'Today Focused',
+                                        dailyFocused['hours']! > 0
+                                            ? '${dailyFocused['hours']}h ${dailyFocused['minutes']}m'
+                                            : '${dailyFocused['minutes']}m',
+                                        Icons.access_time,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                Expanded(
-                                  child: _buildStatItem(
-                                    context,
-                                    AppLocalizations.of(
-                                          context,
-                                        )?.dailySessions ??
-                                        'Today',
-                                    '$dailySessions',
-                                    Icons.today,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              height: 1,
-                              color: Colors.deepPurple.withOpacity(0.2),
-                            ),
-                            const SizedBox(height: 8),
-                            // 두 번째 행: Focused 시간 통계
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildStatItem(
-                                    context,
-                                    AppLocalizations.of(
-                                          context,
-                                        )?.monthlyFocused ??
-                                        'Monthly Focused',
-                                    monthlyStats['totalHours'] > 0
-                                        ? '${monthlyStats['totalHours']}h ${monthlyStats['totalMinutes']}m'
-                                        : '${monthlyStats['totalMinutes']}m',
-                                    Icons.timer_outlined,
-                                  ),
-                                ),
-                                Container(
-                                  width: 1,
-                                  height: 40,
-                                  color: Colors.deepPurple.withOpacity(0.2),
-                                ),
-                                Expanded(
-                                  child: _buildStatItem(
-                                    context,
-                                    AppLocalizations.of(
-                                          context,
-                                        )?.dailyFocused ??
-                                        'Today Focused',
-                                    dailyFocused['hours']! > 0
-                                        ? '${dailyFocused['hours']}h ${dailyFocused['minutes']}m'
-                                        : '${dailyFocused['minutes']}m',
-                                    Icons.access_time,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                    // 배너 광고
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.0),
-                      child: BannerAdWidget(),
+                    // 배너 광고 - 고정 높이로 공간 보장
+                    Container(
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: const BannerAdWidget(),
                     ),
                   ],
                 ),
@@ -466,7 +474,7 @@ class _HistoryPageState extends State<HistoryPage> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -506,14 +514,14 @@ class _HistoryPageState extends State<HistoryPage> {
               ),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: Colors.white, size: 22),
+            child: Icon(icon, color: Colors.white, size: 20),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         Text(
           value,
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 16,
             fontWeight: FontWeight.w900,
             color: Colors.deepPurple.shade900,
             height: 1.0,
@@ -528,11 +536,11 @@ class _HistoryPageState extends State<HistoryPage> {
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: 2),
         Text(
           label,
           style: TextStyle(
-            fontSize: 11,
+            fontSize: 10,
             color: Colors.deepPurple.shade700,
             height: 1.1,
             fontWeight: FontWeight.w700,

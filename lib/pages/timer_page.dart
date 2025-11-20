@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:just_audio/just_audio.dart';
 import '../services/history_service.dart';
 import '../models/timer_history.dart';
 import '../services/app_localizations.dart';
+import '../widgets/banner_ad_widget.dart';
 
 class TimerPage extends StatefulWidget {
   final int focusMinutes;
@@ -30,18 +32,26 @@ class _TimerPageState extends State<TimerPage> {
   int _elapsedSeconds = 0; // 실제 진행된 시간 (초)
   bool _sessionSaved = false;
 
+  // 사운드 재생용 AudioPlayer
+  final AudioPlayer _audioPlayer = AudioPlayer();
+
   @override
   void initState() {
     super.initState();
-    // 테스트용: 초 단위로 변경 (원래는 widget.focusMinutes * 60)
-    _originalFocusSeconds = widget.focusMinutes; // 초 단위로 직접 사용
+    print('[Timer] initState() 호출됨');
+    // 초 단위로 직접 사용 (테스트용)
+    _originalFocusSeconds = widget.focusMinutes; // 이미 초 단위
     _remainingSeconds = _originalFocusSeconds;
     _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
+
+    // AudioPlayer 초기화 확인
+    print('[Timer] AudioPlayer 초기화 완료');
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _audioPlayer.dispose();
     // 페이지를 벗어날 때 세션이 저장되지 않았고 실행 중이었다면 중단으로 저장
     if (!_sessionSaved && _sessionStartTime != null && _elapsedSeconds > 0) {
       _saveSession(SessionStatus.stopped);
@@ -49,8 +59,40 @@ class _TimerPageState extends State<TimerPage> {
     super.dispose();
   }
 
+  /// 사운드 재생 함수
+  Future<void> _playStartSound() async {
+    print('[Sound] 🎵 사운드 재생 함수 호출됨');
+    try {
+      // 이전 재생이 있으면 중지 (에러 무시)
+      try {
+        await _audioPlayer.stop();
+        print('[Sound] 이전 재생 중지 완료');
+      } catch (e) {
+        print('[Sound] 이전 재생 중지 실패 (무시): $e');
+      }
+
+      print('[Sound] 사운드 파일 로드 시작: assets/sounds/START_SOUND.mp3');
+      // just_audio는 setAsset을 먼저 호출하고 play()를 호출해야 함
+      await _audioPlayer.setAsset('assets/sounds/START_SOUND.mp3');
+      print('[Sound] 사운드 파일 로드 완료');
+
+      print('[Sound] 사운드 재생 시작');
+      await _audioPlayer.play();
+      print('[Sound] ✅ 사운드 재생 성공: START_SOUND.mp3');
+    } catch (e, stackTrace) {
+      print('[Sound] ❌ 사운드 재생 실패: $e');
+      print('[Sound] 에러 타입: ${e.runtimeType}');
+      print('[Sound] 스택 트레이스: $stackTrace');
+      print('[Sound] 사운드 파일 경로: assets/sounds/START_SOUND.mp3');
+    }
+  }
+
   void _startTimer() {
-    if (_isRunning) return;
+    print('[Timer] _startTimer() 호출됨');
+    if (_isRunning) {
+      print('[Timer] 이미 실행 중이므로 리턴');
+      return;
+    }
 
     // 세션 시작 시간 기록
     if (_sessionStartTime == null && _currentState == TimerState.focus) {
@@ -58,8 +100,10 @@ class _TimerPageState extends State<TimerPage> {
       _elapsedSeconds = 0;
     }
 
-    // 타이머 시작 알림 소리 재생
-    SystemSound.play(SystemSoundType.click);
+    // Start 버튼 클릭 시 사운드 재생 (비동기로 실행, 에러는 무시)
+    _playStartSound().catchError((error) {
+      print('[Timer] 사운드 재생 중 에러 발생 (무시): $error');
+    });
 
     setState(() {
       _isRunning = true;
@@ -180,8 +224,10 @@ class _TimerPageState extends State<TimerPage> {
           .then((_) {
             // 저장 완료 후 휴식 시간 시작
             if (mounted) {
-              // Break 전환 알림 소리 재생
-              SystemSound.play(SystemSoundType.alert);
+              // Focus가 끝나고 Break로 넘어갈 때 사운드 재생 (비동기로 실행)
+              _playStartSound().catchError((error) {
+                print('[Timer] Focus→Break 전환 시 사운드 재생 에러 (무시): $error');
+              });
 
               setState(() {
                 _currentState = TimerState.breakTime;
@@ -196,8 +242,10 @@ class _TimerPageState extends State<TimerPage> {
             print('Error saving session: $error');
             // 저장 실패해도 휴식 시간은 시작
             if (mounted) {
-              // Break 전환 알림 소리 재생
-              SystemSound.play(SystemSoundType.alert);
+              // Focus가 끝나고 Break로 넘어갈 때 사운드 재생 (비동기로 실행)
+              _playStartSound().catchError((error) {
+                print('[Timer] Focus→Break 전환 시 사운드 재생 에러 (무시): $error');
+              });
 
               setState(() {
                 _currentState = TimerState.breakTime;
@@ -704,7 +752,13 @@ class _TimerPageState extends State<TimerPage> {
                         ),
                       ),
                     ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 20),
+                  // 배너 광고
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8.0),
+                    child: BannerAdWidget(),
+                  ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),

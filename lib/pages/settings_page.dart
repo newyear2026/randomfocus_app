@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../widgets/slide_in_widget.dart';
 import '../services/language_service.dart';
 import '../services/app_localizations.dart';
@@ -610,6 +611,118 @@ class _SettingsPageState extends State<SettingsPage> {
                           ],
                         ),
                       );
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SlideInWidget(
+                index: 4,
+                child: Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.deepPurple.withOpacity(0.08),
+                        blurRadius: 12,
+                        spreadRadius: 0,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
+                    ),
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.deepPurple.shade200,
+                            Colors.deepPurple.shade100,
+                            Colors.purple.shade50,
+                          ],
+                          stops: const [0.0, 0.5, 1.0],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.deepPurple.withOpacity(0.25),
+                            blurRadius: 8,
+                            spreadRadius: 0,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.deepPurple.shade700,
+                              Colors.deepPurple.shade800,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.privacy_tip_outlined,
+                          size: 26,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      AppLocalizations.of(context)?.privacyPolicy ?? 'Privacy Policy',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
+                        height: 1.3,
+                      ),
+                    ),
+                    subtitle: Text(
+                      AppLocalizations.of(context)?.viewPrivacyPolicy ?? 'View our privacy policy',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
+                        height: 1.4,
+                      ),
+                    ),
+                    trailing: const Icon(Icons.chevron_right, size: 28),
+                    minVerticalPadding: 12,
+                    onTap: () async {
+                      // ⚠️ 출시 전 반드시 실제 개인정보 처리방침 URL로 변경하세요!
+                      // Google Ads를 사용하는 앱은 개인정보 처리방침이 필수입니다.
+                      const privacyPolicyUrl = 'https://your-website.com/privacy-policy';
+                      
+                      final uri = Uri.parse(privacyPolicyUrl);
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      } else {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                AppLocalizations.of(context)?.couldNotOpenUrl ?? 
+                                'Could not open privacy policy URL',
+                              ),
+                            ),
+                          );
+                        }
+                      }
                     },
                   ),
                 ),

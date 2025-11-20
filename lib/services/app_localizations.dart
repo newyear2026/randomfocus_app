@@ -97,6 +97,9 @@ class AppLocalizations {
       'loading': 'Loading...',
       'attemptsToday': 'Attempts today',
       'focusWithRandomTimer': 'Focus with Random Timer',
+      'privacyPolicy': 'Privacy Policy',
+      'viewPrivacyPolicy': 'View our privacy policy',
+      'couldNotOpenUrl': 'Could not open URL',
     },
     'es': {
       // Navigation
@@ -183,6 +186,9 @@ class AppLocalizations {
       'loading': 'Cargando...',
       'attemptsToday': 'Intentos hoy',
       'focusWithRandomTimer': 'Enfócate con Temporizador Aleatorio',
+      'privacyPolicy': 'Política de Privacidad',
+      'viewPrivacyPolicy': 'Ver nuestra política de privacidad',
+      'couldNotOpenUrl': 'No se pudo abrir la URL',
     },
     'zh': {
       // Navigation
@@ -266,6 +272,9 @@ class AppLocalizations {
       'loading': '加载中...',
       'attemptsToday': '今日尝试',
       'focusWithRandomTimer': '使用随机计时器专注',
+      'privacyPolicy': '隐私政策',
+      'viewPrivacyPolicy': '查看我们的隐私政策',
+      'couldNotOpenUrl': '无法打开URL',
     },
   };
 
@@ -339,6 +348,9 @@ class AppLocalizations {
   String deleteSelectedConfirm(int count) =>
       translateWithParams('deleteSelectedConfirm', {'count': count.toString()});
   String get refresh => translate('refresh');
+  String get privacyPolicy => translate('privacyPolicy');
+  String get viewPrivacyPolicy => translate('viewPrivacyPolicy');
+  String get couldNotOpenUrl => translate('couldNotOpenUrl');
 }
 
 class _AppLocalizationsDelegate
