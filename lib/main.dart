@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'pages/home_page.dart';
+import 'pages/splash_page.dart';
 import 'services/language_service.dart';
+import 'services/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,10 +45,11 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Random Pomodoro Timer',
+      title: 'Random Pomodoro',
       locale: _locale,
       supportedLocales: LanguageService.supportedLocales,
       localizationsDelegates: [
+        AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
@@ -98,7 +101,7 @@ class _MyAppState extends State<MyApp> {
           filled: true,
         ),
       ),
-      home: HomePage(onLanguageChanged: _changeLanguage),
+      home: SplashPage(child: HomePage(onLanguageChanged: _changeLanguage)),
       debugShowCheckedModeBanner: false,
     );
   }
