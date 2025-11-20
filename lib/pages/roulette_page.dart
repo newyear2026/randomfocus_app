@@ -5,6 +5,7 @@ import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
 import 'timer_page.dart';
 import '../services/spin_storage.dart';
 import '../services/app_localizations.dart';
+import '../widgets/banner_ad_widget.dart';
 
 class RoulettePage extends StatefulWidget {
   const RoulettePage({super.key});
@@ -761,6 +762,11 @@ class _RoulettePageState extends State<RoulettePage> {
                               ),
                             ),
                             const SizedBox(height: 20),
+                            // 배너 광고
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8.0),
+                              child: BannerAdWidget(),
+                            ),
                           ],
                         ),
                       ),

@@ -3,6 +3,7 @@ import 'package:table_calendar/table_calendar.dart';
 import '../services/history_service.dart';
 import '../models/timer_history.dart';
 import '../services/app_localizations.dart';
+import '../widgets/banner_ad_widget.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -440,6 +441,11 @@ class _HistoryPageState extends State<HistoryPage> {
                           ],
                         ),
                       ),
+                    ),
+                    // 배너 광고
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: BannerAdWidget(),
                     ),
                   ],
                 ),

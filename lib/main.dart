@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'pages/home_page.dart';
 import 'pages/splash_page.dart';
 import 'services/language_service.dart';
@@ -7,6 +8,10 @@ import 'services/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Google Mobile Ads 초기화
+  await MobileAds.instance.initialize();
+
   runApp(const MyApp());
 }
 
