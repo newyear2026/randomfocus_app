@@ -93,39 +93,76 @@ class _SplashPageState extends State<SplashPage>
                 children: [
                   // 앱 아이콘 - 더 크고 세련되게
                   Container(
-                    height: 140,
-                    width: 140,
+                    height: 150,
+                    width: 150,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Colors.white.withOpacity(0.3),
+                          Colors.white.withOpacity(0.4),
+                          Colors.white.withOpacity(0.25),
                           Colors.white.withOpacity(0.15),
                         ],
+                        stops: const [0.0, 0.5, 1.0],
                       ),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 20,
+                          color: Colors.black.withOpacity(0.25),
+                          blurRadius: 25,
+                          spreadRadius: 3,
+                          offset: const Offset(0, 10),
+                        ),
+                        BoxShadow(
+                          color: Colors.white.withOpacity(0.3),
+                          blurRadius: 35,
                           spreadRadius: 5,
+                          offset: const Offset(0, 15),
+                        ),
+                        BoxShadow(
+                          color: Colors.deepPurple.withOpacity(0.2),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 8),
                         ),
                       ],
                     ),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.white.withOpacity(0.2),
+                            Colors.white.withOpacity(0.1),
+                          ],
+                        ),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
-                          width: 2,
+                          color: Colors.white.withOpacity(0.4),
+                          width: 3,
                         ),
                       ),
-                      child: const Icon(
-                        Icons.timer_outlined,
-                        size: 70,
-                        color: Colors.white,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.deepPurple.shade600,
+                              Colors.deepPurple.shade800,
+                              Colors.purple.shade700,
+                            ],
+                            stops: const [0.0, 0.5, 1.0],
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.timer_outlined,
+                          size: 75,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -133,40 +170,74 @@ class _SplashPageState extends State<SplashPage>
                   // 앱 이름 - RANDOM POMODORO
                   Column(
                     children: [
-                      Text(
-                        'RANDOM',
-                        style: TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          letterSpacing: 3.0,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
+                      ShaderMask(
+                        shaderCallback: (bounds) => LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.white,
+                            Colors.white.withOpacity(0.9),
+                            Colors.white.withOpacity(0.8),
                           ],
+                        ).createShader(bounds),
+                        child: Text(
+                          'RANDOM',
+                          style: TextStyle(
+                            fontSize: 42,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: 4.5,
+                            height: 1.1,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.4),
+                                blurRadius: 12,
+                                offset: const Offset(0, 5),
+                              ),
+                              Shadow(
+                                color: Colors.deepPurple.withOpacity(0.3),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'POMODORO',
-                        style: TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          letterSpacing: 3.0,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
+                      const SizedBox(height: 6),
+                      ShaderMask(
+                        shaderCallback: (bounds) => LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.white,
+                            Colors.white.withOpacity(0.9),
+                            Colors.white.withOpacity(0.8),
                           ],
+                        ).createShader(bounds),
+                        child: Text(
+                          'POMODORO',
+                          style: TextStyle(
+                            fontSize: 42,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: 4.5,
+                            height: 1.1,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.4),
+                                blurRadius: 12,
+                                offset: const Offset(0, 5),
+                              ),
+                              Shadow(
+                                color: Colors.deepPurple.withOpacity(0.3),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),

@@ -119,66 +119,75 @@ class _HistoryPageState extends State<HistoryPage> {
     final dailySessions = _getDailySessions(_selectedDay);
     final dailyFocused = _getDailyFocusedTime(_selectedDay);
 
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.deepPurple.shade50,
-              Colors.purple.shade50,
-              Colors.white,
-            ],
-            stops: const [0.0, 0.5, 1.0],
-          ),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.deepPurple.shade50,
+            Colors.purple.shade50,
+            Colors.white,
+          ],
+          stops: const [0.0, 0.5, 1.0],
         ),
-        child: Scaffold(
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
           backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            flexibleSpace: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.deepPurple.shade700,
-                    Colors.deepPurple.shade500,
-                    Colors.purple.shade400,
-                  ],
-                ),
+          elevation: 0,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.deepPurple.shade700,
+                  Colors.deepPurple.shade500,
+                  Colors.purple.shade400,
+                ],
               ),
             ),
-            title: Text(
-              AppLocalizations.of(context)?.history ?? 'History',
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: 0.5,
-              ),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.refresh, color: Colors.white),
-                onPressed: _loadHistories,
-                tooltip: AppLocalizations.of(context)?.refresh ?? 'Refresh',
-              ),
-            ],
           ),
-          body: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      // 캘린더
-                      Container(
-                        margin: const EdgeInsets.all(16),
+          title: Text(
+            AppLocalizations.of(context)?.history ?? 'History',
+            style: const TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              letterSpacing: 1.2,
+              height: 1.2,
+              shadows: [
+                Shadow(
+                  color: Colors.black26,
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              onPressed: _loadHistories,
+              tooltip: AppLocalizations.of(context)?.refresh ?? 'Refresh',
+            ),
+          ],
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SafeArea(
+                child: Column(
+                  children: [
+                    // 캘린더 - Flexible로 공간 조정
+                    Flexible(
+                      flex: 3,
+                      child: Container(
+                        margin: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.deepPurple.withOpacity(0.15),
@@ -213,27 +222,6 @@ class _HistoryPageState extends State<HistoryPage> {
                                 .toList();
                           },
                           startingDayOfWeek: StartingDayOfWeek.monday,
-                          calendarStyle: CalendarStyle(
-                            outsideDaysVisible: false,
-                            weekendTextStyle: TextStyle(
-                              color: Colors.deepPurple.shade700,
-                            ),
-                            selectedDecoration: BoxDecoration(
-                              color: Colors.deepPurple,
-                              shape: BoxShape.circle,
-                            ),
-                            todayDecoration: BoxDecoration(
-                              color: Colors.deepPurple.shade100,
-                              shape: BoxShape.circle,
-                            ),
-                            markerDecoration: BoxDecoration(
-                              color: Colors.deepPurple.shade400,
-                              shape: BoxShape.circle,
-                            ),
-                            markersMaxCount: 1,
-                            markerSize: 8,
-                            markerMargin: const EdgeInsets.only(bottom: 2),
-                          ),
                           calendarBuilders: CalendarBuilders(
                             markerBuilder: (context, date, events) {
                               if (events.isNotEmpty) {
@@ -265,28 +253,67 @@ class _HistoryPageState extends State<HistoryPage> {
                             formatButtonVisible: false,
                             titleCentered: true,
                             titleTextStyle: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.deepPurple.shade700,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.deepPurple.shade800,
+                              letterSpacing: 0.5,
                             ),
                             leftChevronIcon: Icon(
                               Icons.chevron_left,
                               color: Colors.deepPurple.shade700,
+                              size: 20,
                             ),
                             rightChevronIcon: Icon(
                               Icons.chevron_right,
                               color: Colors.deepPurple.shade700,
+                              size: 20,
                             ),
+                            headerPadding: const EdgeInsets.symmetric(
+                              vertical: 8,
+                            ),
+                            leftChevronPadding: EdgeInsets.zero,
+                            rightChevronPadding: EdgeInsets.zero,
                           ),
+                          rowHeight: 36,
+                          daysOfWeekHeight: 32,
                           daysOfWeekStyle: DaysOfWeekStyle(
                             weekdayStyle: TextStyle(
                               color: Colors.deepPurple.shade700,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
                             ),
                             weekendStyle: TextStyle(
                               color: Colors.deepPurple.shade700,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                            ),
+                          ),
+                          calendarStyle: CalendarStyle(
+                            outsideDaysVisible: false,
+                            weekendTextStyle: TextStyle(
+                              color: Colors.deepPurple.shade700,
+                              fontSize: 13,
+                            ),
+                            defaultTextStyle: TextStyle(
+                              color: Colors.deepPurple.shade800,
+                              fontSize: 13,
                               fontWeight: FontWeight.w600,
                             ),
+                            selectedDecoration: BoxDecoration(
+                              color: Colors.deepPurple,
+                              shape: BoxShape.circle,
+                            ),
+                            todayDecoration: BoxDecoration(
+                              color: Colors.deepPurple.shade100,
+                              shape: BoxShape.circle,
+                            ),
+                            markerDecoration: BoxDecoration(
+                              color: Colors.deepPurple.shade400,
+                              shape: BoxShape.circle,
+                            ),
+                            markersMaxCount: 1,
+                            markerSize: 6,
+                            markerMargin: const EdgeInsets.only(bottom: 1),
                           ),
                           onDaySelected: (selectedDay, focusedDay) {
                             setState(() {
@@ -299,12 +326,15 @@ class _HistoryPageState extends State<HistoryPage> {
                           },
                         ),
                       ),
-                      // 월간 통계 요약
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                    // 월간 통계 요약 - Flexible로 공간 조정
+                    Flexible(
+                      flex: 2,
+                      child: Container(
+                        margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
+                          horizontal: 12,
+                          vertical: 10,
                         ),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -315,7 +345,7 @@ class _HistoryPageState extends State<HistoryPage> {
                               Colors.purple.shade50,
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(18),
                           border: Border.all(
                             color: Colors.deepPurple.withOpacity(0.15),
                             width: 1.5,
@@ -331,6 +361,7 @@ class _HistoryPageState extends State<HistoryPage> {
                         ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             // 첫 번째 행: 세션 통계
                             Row(
@@ -348,7 +379,7 @@ class _HistoryPageState extends State<HistoryPage> {
                                 ),
                                 Container(
                                   width: 1,
-                                  height: 50,
+                                  height: 35,
                                   color: Colors.deepPurple.withOpacity(0.2),
                                 ),
                                 Expanded(
@@ -364,12 +395,12 @@ class _HistoryPageState extends State<HistoryPage> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 8),
                             Container(
                               height: 1,
                               color: Colors.deepPurple.withOpacity(0.2),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 8),
                             // 두 번째 행: Focused 시간 통계
                             Row(
                               children: [
@@ -388,7 +419,7 @@ class _HistoryPageState extends State<HistoryPage> {
                                 ),
                                 Container(
                                   width: 1,
-                                  height: 50,
+                                  height: 40,
                                   color: Colors.deepPurple.withOpacity(0.2),
                                 ),
                                 Expanded(
@@ -409,11 +440,10 @@ class _HistoryPageState extends State<HistoryPage> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 16),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-        ),
+              ),
       ),
     );
   }
@@ -429,25 +459,78 @@ class _HistoryPageState extends State<HistoryPage> {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(icon, color: Colors.deepPurple.shade700, size: 24),
-        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.deepPurple.shade200,
+                Colors.deepPurple.shade100,
+                Colors.purple.shade50,
+              ],
+              stops: const [0.0, 0.5, 1.0],
+            ),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.deepPurple.withOpacity(0.3),
+                blurRadius: 10,
+                spreadRadius: 1,
+                offset: const Offset(0, 3),
+              ),
+              BoxShadow(
+                color: Colors.purple.withOpacity(0.2),
+                blurRadius: 6,
+                spreadRadius: 0,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.deepPurple.shade700,
+                  Colors.deepPurple.shade800,
+                ],
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: Colors.white, size: 22),
+          ),
+        ),
+        const SizedBox(height: 6),
         Text(
           value,
           style: TextStyle(
             fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.deepPurple.shade700,
-            height: 1.2,
+            fontWeight: FontWeight.w900,
+            color: Colors.deepPurple.shade900,
+            height: 1.0,
+            letterSpacing: 0.8,
+            shadows: [
+              Shadow(
+                color: Colors.deepPurple.withOpacity(0.2),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 3),
         Text(
           label,
           style: TextStyle(
-            fontSize: 12,
-            color: Colors.deepPurple.shade600,
-            height: 1.2,
+            fontSize: 11,
+            color: Colors.deepPurple.shade700,
+            height: 1.1,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.2,
           ),
           textAlign: TextAlign.center,
           maxLines: 2,

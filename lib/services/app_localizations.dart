@@ -91,7 +91,7 @@ class AppLocalizations {
       'lastAttempt': 'This is your last attempt!',
       'startingTimer': 'Starting timer now...',
       'spinAgain': 'Spin Again',
-      'startTimer': 'Start Timer',
+      'startTimer': 'Start',
       'continue': 'Continue',
       'spinToChoose': 'Spin to choose your focus time',
       'loading': 'Loading...',

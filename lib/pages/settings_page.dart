@@ -37,6 +37,11 @@ class _SettingsPageState extends State<SettingsPage> {
       builder: (context) => AlertDialog(
         title: Text(
           AppLocalizations.of(context)?.selectLanguage ?? 'Select Language',
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.5,
+          ),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -47,7 +52,17 @@ class _SettingsPageState extends State<SettingsPage> {
             final isSelected = _currentLanguage == languageCode;
 
             return ListTile(
-              title: Text(languageName),
+              title: Text(
+                languageName,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  color: isSelected
+                      ? Colors.deepPurple.shade800
+                      : Colors.grey.shade800,
+                  letterSpacing: 0.2,
+                ),
+              ),
               leading: Radio<String>(
                 value: languageCode,
                 groupValue: _currentLanguage,
@@ -131,10 +146,18 @@ class _SettingsPageState extends State<SettingsPage> {
             title: Text(
               AppLocalizations.of(context)?.settings ?? 'Settings',
               style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+                fontSize: 26,
+                fontWeight: FontWeight.w900,
                 color: Colors.white,
-                letterSpacing: 0.5,
+                letterSpacing: 1.2,
+                height: 1.2,
+                shadows: [
+                  Shadow(
+                    color: Colors.black26,
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
             ),
           ),
@@ -168,19 +191,68 @@ class _SettingsPageState extends State<SettingsPage> {
                       horizontal: 20,
                       vertical: 8,
                     ),
-                    leading: const Icon(Icons.notifications_outlined, size: 28),
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.deepPurple.shade200,
+                            Colors.deepPurple.shade100,
+                            Colors.purple.shade50,
+                          ],
+                          stops: const [0.0, 0.5, 1.0],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.deepPurple.withOpacity(0.25),
+                            blurRadius: 8,
+                            spreadRadius: 0,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.deepPurple.shade700,
+                              Colors.deepPurple.shade800,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.notifications_outlined,
+                          size: 26,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                     title: Text(
                       AppLocalizations.of(context)?.notifications ??
                           'Notifications',
                       style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
+                        height: 1.3,
                       ),
                     ),
                     subtitle: Text(
                       AppLocalizations.of(context)?.manageAlerts ??
                           'Manage your alerts',
-                      style: const TextStyle(fontSize: 14),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
+                        height: 1.4,
+                      ),
                     ),
                     trailing: Switch(
                       value: true,
@@ -217,18 +289,67 @@ class _SettingsPageState extends State<SettingsPage> {
                       horizontal: 20,
                       vertical: 8,
                     ),
-                    leading: const Icon(Icons.language, size: 28),
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.deepPurple.shade200,
+                            Colors.deepPurple.shade100,
+                            Colors.purple.shade50,
+                          ],
+                          stops: const [0.0, 0.5, 1.0],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.deepPurple.withOpacity(0.25),
+                            blurRadius: 8,
+                            spreadRadius: 0,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.deepPurple.shade700,
+                              Colors.deepPurple.shade800,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.language,
+                          size: 26,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                     title: Text(
                       AppLocalizations.of(context)?.language ?? 'Language',
                       style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
+                        height: 1.3,
                       ),
                     ),
                     subtitle: Text(
                       LanguageService.languageNames[_currentLanguage] ??
                           'English',
-                      style: const TextStyle(fontSize: 14),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
+                        height: 1.4,
+                      ),
                     ),
                     trailing: const Icon(Icons.chevron_right, size: 28),
                     minVerticalPadding: 12,
@@ -261,18 +382,67 @@ class _SettingsPageState extends State<SettingsPage> {
                       horizontal: 20,
                       vertical: 8,
                     ),
-                    leading: const Icon(Icons.info_outline, size: 28),
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.deepPurple.shade200,
+                            Colors.deepPurple.shade100,
+                            Colors.purple.shade50,
+                          ],
+                          stops: const [0.0, 0.5, 1.0],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.deepPurple.withOpacity(0.25),
+                            blurRadius: 8,
+                            spreadRadius: 0,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.deepPurple.shade700,
+                              Colors.deepPurple.shade800,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.info_outline,
+                          size: 26,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                     title: Text(
                       AppLocalizations.of(context)?.about ?? 'About',
                       style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
+                        height: 1.3,
                       ),
                     ),
                     subtitle: Text(
                       AppLocalizations.of(context)?.appInformation ??
                           'App information',
-                      style: const TextStyle(fontSize: 14),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
+                        height: 1.4,
+                      ),
                     ),
                     trailing: const Icon(Icons.chevron_right, size: 28),
                     minVerticalPadding: 12,
@@ -283,11 +453,22 @@ class _SettingsPageState extends State<SettingsPage> {
                           title: Text(
                             AppLocalizations.of(context)?.appTitle ??
                                 'Random Pomodoro Timer',
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                            ),
                           ),
                           content: Text(
                             '${AppLocalizations.of(context)?.appTitle ?? 'Random Pomodoro Timer'}\n\n'
                             '${AppLocalizations.of(context)?.appVersion ?? 'Version 1.0.0'}\n\n'
                             '${AppLocalizations.of(context)?.appDescription ?? 'An app to help you maintain focus with random timer sessions.'}',
+                            style: TextStyle(
+                              fontSize: 15,
+                              height: 1.6,
+                              color: Colors.grey.shade800,
+                              letterSpacing: 0.2,
+                            ),
                           ),
                           actions: [
                             TextButton(
@@ -328,18 +509,67 @@ class _SettingsPageState extends State<SettingsPage> {
                       horizontal: 20,
                       vertical: 8,
                     ),
-                    leading: const Icon(Icons.help_outline, size: 28),
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.deepPurple.shade200,
+                            Colors.deepPurple.shade100,
+                            Colors.purple.shade50,
+                          ],
+                          stops: const [0.0, 0.5, 1.0],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.deepPurple.withOpacity(0.25),
+                            blurRadius: 8,
+                            spreadRadius: 0,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.deepPurple.shade700,
+                              Colors.deepPurple.shade800,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.help_outline,
+                          size: 26,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                     title: Text(
                       AppLocalizations.of(context)?.help ?? 'Help',
                       style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
+                        height: 1.3,
                       ),
                     ),
                     subtitle: Text(
                       AppLocalizations.of(context)?.howToUse ??
                           'How to use the app',
-                      style: const TextStyle(fontSize: 14),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
+                        height: 1.4,
+                      ),
                     ),
                     trailing: const Icon(Icons.chevron_right, size: 28),
                     minVerticalPadding: 12,
@@ -350,6 +580,11 @@ class _SettingsPageState extends State<SettingsPage> {
                           title: Text(
                             AppLocalizations.of(context)?.howToUse ??
                                 'How to Use',
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                            ),
                           ),
                           content: Text(
                             AppLocalizations.of(context)?.howToUseContent ??
@@ -358,6 +593,12 @@ class _SettingsPageState extends State<SettingsPage> {
                                     '3. Take a break\n'
                                     '4. Repeat and stay motivated!\n\n'
                                     'You have 2 attempts per day.',
+                            style: TextStyle(
+                              fontSize: 15,
+                              height: 1.6,
+                              color: Colors.grey.shade800,
+                              letterSpacing: 0.2,
+                            ),
                           ),
                           actions: [
                             TextButton(

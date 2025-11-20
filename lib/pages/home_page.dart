@@ -105,65 +105,113 @@ class _HomePageState extends State<HomePage> {
             decoration: BoxDecoration(
               gradient: isSelected
                   ? LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                       colors: [
-                        Colors.deepPurple.withOpacity(0.15),
-                        Colors.deepPurple.withOpacity(0.08),
+                        Colors.deepPurple.withOpacity(0.2),
+                        Colors.deepPurple.withOpacity(0.1),
+                        Colors.purple.withOpacity(0.05),
                       ],
+                      stops: const [0.0, 0.5, 1.0],
                     )
                   : null,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(24),
+              border: isSelected
+                  ? Border.all(
+                      color: Colors.deepPurple.withOpacity(0.2),
+                      width: 1,
+                    )
+                  : null,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
+                  duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOutCubic,
-                  padding: EdgeInsets.all(isSelected ? 7 : 5),
+                  padding: EdgeInsets.all(isSelected ? 10 : 7),
                   decoration: BoxDecoration(
                     gradient: isSelected
                         ? LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              Colors.deepPurple,
-                              Colors.deepPurple.shade600,
+                              Colors.deepPurple.shade300,
+                              Colors.deepPurple.shade500,
+                              Colors.deepPurple.shade700,
+                              Colors.purple.shade600,
                             ],
+                            stops: const [0.0, 0.3, 0.7, 1.0],
                           )
-                        : null,
-                    color: !isSelected ? Colors.transparent : null,
+                        : LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Colors.grey.shade100, Colors.white],
+                          ),
                     shape: BoxShape.circle,
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: Colors.deepPurple.withOpacity(0.4),
-                              blurRadius: 8,
+                              color: Colors.deepPurple.withOpacity(0.6),
+                              blurRadius: 16,
+                              spreadRadius: 3,
+                              offset: const Offset(0, 5),
+                            ),
+                            BoxShadow(
+                              color: Colors.purple.withOpacity(0.4),
+                              blurRadius: 10,
                               spreadRadius: 1,
-                              offset: const Offset(0, 2),
+                              offset: const Offset(0, 3),
+                            ),
+                            BoxShadow(
+                              color: Colors.deepPurple.withOpacity(0.2),
+                              blurRadius: 6,
+                              spreadRadius: 0,
+                              offset: const Offset(0, 1),
                             ),
                           ]
-                        : null,
+                        : [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.15),
+                              blurRadius: 6,
+                              spreadRadius: 0,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                   ),
-                  child: Icon(
-                    isSelected ? selectedIcon : icon,
-                    size: isSelected ? 24 : 22,
-                    color: isSelected ? Colors.white : Colors.grey.shade600,
+                  child: Container(
+                    decoration: isSelected
+                        ? BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Colors.white.withOpacity(0.2),
+                                Colors.white.withOpacity(0.1),
+                              ],
+                            ),
+                            shape: BoxShape.circle,
+                          )
+                        : null,
+                    child: Icon(
+                      isSelected ? selectedIcon : icon,
+                      size: isSelected ? 28 : 24,
+                      color: isSelected ? Colors.white : Colors.grey.shade700,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 4),
                 AnimatedDefaultTextStyle(
                   duration: const Duration(milliseconds: 200),
                   style: TextStyle(
-                    fontSize: isSelected ? 11.5 : 11,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    fontSize: isSelected ? 12.5 : 11.5,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                     color: isSelected
-                        ? Colors.deepPurple
-                        : Colors.grey.shade600,
-                    letterSpacing: 0.3,
-                    height: 1.1,
+                        ? Colors.deepPurple.shade800
+                        : Colors.grey.shade700,
+                    letterSpacing: isSelected ? 0.5 : 0.3,
+                    height: 1.2,
                   ),
                   child: Text(
                     label,

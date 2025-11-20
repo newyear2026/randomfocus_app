@@ -113,42 +113,100 @@ class _RoulettePageState extends State<RoulettePage> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        backgroundColor: Colors.white,
+        elevation: 24,
         title: Text(
           AppLocalizations.of(context)?.translate('result') ?? 'Result',
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 30,
+            fontWeight: FontWeight.w900,
+            color: Colors.deepPurple.shade900,
+            letterSpacing: 1.5,
+            height: 1.2,
+            shadows: [
+              Shadow(
+                color: Colors.deepPurple.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
           textAlign: TextAlign.center,
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 28),
               decoration: BoxDecoration(
-                color: _colorForTime(selectedMinutes).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: _colorForTime(selectedMinutes).withOpacity(0.3),
-                  width: 2,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    _colorForTime(selectedMinutes).withOpacity(0.2),
+                    _colorForTime(selectedMinutes).withOpacity(0.12),
+                    _colorForTime(selectedMinutes).withOpacity(0.08),
+                  ],
+                  stops: const [0.0, 0.5, 1.0],
                 ),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: _colorForTime(selectedMinutes).withOpacity(0.5),
+                  width: 3,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: _colorForTime(selectedMinutes).withOpacity(0.3),
+                    blurRadius: 20,
+                    spreadRadius: 0,
+                    offset: const Offset(0, 6),
+                  ),
+                  BoxShadow(
+                    color: _colorForTime(selectedMinutes).withOpacity(0.15),
+                    blurRadius: 10,
+                    spreadRadius: 0,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
               child: Column(
                 children: [
                   Text(
                     '$selectedMinutes',
                     style: TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 64,
+                      fontWeight: FontWeight.w900,
                       color: _colorForTime(selectedMinutes),
+                      letterSpacing: 2.0,
+                      height: 1.1,
+                      shadows: [
+                        Shadow(
+                          color: _colorForTime(
+                            selectedMinutes,
+                          ).withOpacity(0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                        Shadow(
+                          color: _colorForTime(
+                            selectedMinutes,
+                          ).withOpacity(0.2),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Text(
                     AppLocalizations.of(context)?.seconds ?? 'seconds',
                     style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w500,
+                      fontSize: 22,
+                      color: Colors.grey.shade800,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.0,
+                      height: 1.3,
                     ),
                   ),
                 ],
@@ -162,47 +220,109 @@ class _RoulettePageState extends State<RoulettePage> {
               children: [
                 // Spin Again 버튼
                 Flexible(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context, 'spin_again'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.deepPurple,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                  child: Container(
+                    height: 52,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Colors.white, Colors.grey.shade50],
                       ),
+                      borderRadius: BorderRadius.circular(26),
+                      border: Border.all(
+                        color: Colors.deepPurple.withOpacity(0.3),
+                        width: 2.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.deepPurple.withOpacity(0.15),
+                          blurRadius: 10,
+                          spreadRadius: 0,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
-                    child: Text(
-                      AppLocalizations.of(context)?.translate('spinAgain') ??
-                          'Spin Again',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context, 'spin_again'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.deepPurple.shade800,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 22,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(26),
+                        ),
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context)?.translate('spinAgain') ??
+                            'Spin Again',
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8,
+                          height: 1.2,
+                        ),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 // Start Timer 버튼
                 Flexible(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context, 'start_timer'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
+                  child: Container(
+                    height: 50,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.deepPurple.shade600,
+                          Colors.deepPurple,
+                          Colors.purple.shade600,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        stops: const [0.0, 0.5, 1.0],
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(28),
-                      ),
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.deepPurple.withOpacity(0.4),
+                          blurRadius: 12,
+                          spreadRadius: 0,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    child: Text(
-                      AppLocalizations.of(context)?.translate('startTimer') ??
-                          'Start Timer',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, 'start_timer'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context)?.translate('startTimer') ??
+                            'Start',
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8,
+                          height: 1.2,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black12,
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -270,20 +390,30 @@ class _RoulettePageState extends State<RoulettePage> {
                 Text(
                   AppLocalizations.of(context)?.appTitle ?? 'Random Pomodoro',
                   style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
                     color: Colors.white,
-                    letterSpacing: 0.5,
+                    letterSpacing: 1.2,
+                    height: 1.2,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black26,
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   AppLocalizations.of(context)?.translate('spinToChoose') ??
                       'Spin to choose your focus time',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 13,
                     color: Colors.white.withOpacity(0.95),
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                    height: 1.3,
                   ),
                 ),
               ],
@@ -306,9 +436,10 @@ class _RoulettePageState extends State<RoulettePage> {
                         AppLocalizations.of(context)?.translate('loading') ??
                             'Loading...',
                         style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.deepPurple.shade700,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 18,
+                          color: Colors.deepPurple.shade800,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ],
@@ -378,13 +509,62 @@ class _RoulettePageState extends State<RoulettePage> {
                                         selected: _wheelController.stream,
                                         onAnimationEnd:
                                             _handleWheelAnimationEnd,
-                                        indicators: const <FortuneIndicator>[
+                                        indicators: <FortuneIndicator>[
                                           FortuneIndicator(
                                             alignment: Alignment.topCenter,
-                                            child: TriangleIndicator(
-                                              color: Colors.white,
-                                              width: 20,
-                                              height: 20,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                  colors: [
+                                                    Colors.white,
+                                                    Colors.white.withOpacity(
+                                                      0.95,
+                                                    ),
+                                                  ],
+                                                ),
+                                                shape: BoxShape.circle,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.deepPurple
+                                                        .withOpacity(0.4),
+                                                    blurRadius: 12,
+                                                    spreadRadius: 2,
+                                                    offset: const Offset(0, 4),
+                                                  ),
+                                                  BoxShadow(
+                                                    color: Colors.black
+                                                        .withOpacity(0.2),
+                                                    blurRadius: 8,
+                                                    spreadRadius: 1,
+                                                    offset: const Offset(0, 2),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    begin: Alignment.topLeft,
+                                                    end: Alignment.bottomRight,
+                                                    colors: [
+                                                      Colors
+                                                          .deepPurple
+                                                          .shade600,
+                                                      Colors
+                                                          .deepPurple
+                                                          .shade800,
+                                                    ],
+                                                  ),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: TriangleIndicator(
+                                                  color: Colors.white,
+                                                  width: 20,
+                                                  height: 20,
+                                                ),
+                                              ),
                                             ),
                                           ),
                                         ],
@@ -394,14 +574,20 @@ class _RoulettePageState extends State<RoulettePage> {
                                                 child: Text(
                                                   '$t',
                                                   style: const TextStyle(
-                                                    fontSize: 28,
-                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 32,
+                                                    fontWeight: FontWeight.w900,
                                                     color: Colors.white,
+                                                    letterSpacing: 1.0,
                                                     shadows: [
                                                       Shadow(
-                                                        color: Colors.black26,
-                                                        blurRadius: 4,
-                                                        offset: Offset(0, 2),
+                                                        color: Colors.black38,
+                                                        blurRadius: 6,
+                                                        offset: Offset(0, 3),
+                                                      ),
+                                                      Shadow(
+                                                        color: Colors.black12,
+                                                        blurRadius: 2,
+                                                        offset: Offset(0, 1),
                                                       ),
                                                     ],
                                                   ),
@@ -421,25 +607,33 @@ class _RoulettePageState extends State<RoulettePage> {
                                   // Spin 버튼 - 현대적인 디자인
                                   Container(
                                     width: double.infinity,
-                                    height: 64,
+                                    height: 68,
                                     decoration: BoxDecoration(
                                       gradient: LinearGradient(
                                         colors: [
+                                          Colors.deepPurple.shade600,
                                           Colors.deepPurple,
                                           Colors.purple.shade600,
                                         ],
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
+                                        stops: const [0.0, 0.5, 1.0],
                                       ),
-                                      borderRadius: BorderRadius.circular(32),
+                                      borderRadius: BorderRadius.circular(36),
                                       boxShadow: [
                                         BoxShadow(
                                           color: Colors.deepPurple.withOpacity(
-                                            0.4,
+                                            0.5,
                                           ),
-                                          blurRadius: 16,
-                                          spreadRadius: 2,
-                                          offset: const Offset(0, 6),
+                                          blurRadius: 20,
+                                          spreadRadius: 0,
+                                          offset: const Offset(0, 8),
+                                        ),
+                                        BoxShadow(
+                                          color: Colors.purple.withOpacity(0.3),
+                                          blurRadius: 15,
+                                          spreadRadius: 0,
+                                          offset: const Offset(0, 4),
                                         ),
                                       ],
                                     ),
@@ -454,7 +648,7 @@ class _RoulettePageState extends State<RoulettePage> {
                                                 );
                                                 _onSpinPressed();
                                               },
-                                        borderRadius: BorderRadius.circular(32),
+                                        borderRadius: BorderRadius.circular(36),
                                         child: Center(
                                           child: Row(
                                             mainAxisAlignment:
@@ -462,30 +656,99 @@ class _RoulettePageState extends State<RoulettePage> {
                                             children: [
                                               Container(
                                                 padding: const EdgeInsets.all(
-                                                  6,
+                                                  10,
                                                 ),
                                                 decoration: BoxDecoration(
-                                                  color: Colors.white
-                                                      .withOpacity(0.2),
+                                                  gradient: LinearGradient(
+                                                    begin: Alignment.topLeft,
+                                                    end: Alignment.bottomRight,
+                                                    colors: [
+                                                      Colors.white.withOpacity(
+                                                        0.4,
+                                                      ),
+                                                      Colors.white.withOpacity(
+                                                        0.25,
+                                                      ),
+                                                      Colors.white.withOpacity(
+                                                        0.15,
+                                                      ),
+                                                    ],
+                                                    stops: const [
+                                                      0.0,
+                                                      0.5,
+                                                      1.0,
+                                                    ],
+                                                  ),
                                                   shape: BoxShape.circle,
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.white
+                                                          .withOpacity(0.3),
+                                                      blurRadius: 12,
+                                                      spreadRadius: 2,
+                                                      offset: const Offset(
+                                                        0,
+                                                        2,
+                                                      ),
+                                                    ),
+                                                    BoxShadow(
+                                                      color: Colors.black
+                                                          .withOpacity(0.1),
+                                                      blurRadius: 6,
+                                                      spreadRadius: 0,
+                                                      offset: const Offset(
+                                                        0,
+                                                        1,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
-                                                child: const Icon(
-                                                  Icons.autorenew,
-                                                  size: 28,
-                                                  color: Colors.white,
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    gradient: LinearGradient(
+                                                      begin: Alignment.topLeft,
+                                                      end:
+                                                          Alignment.bottomRight,
+                                                      colors: [
+                                                        Colors.white
+                                                            .withOpacity(0.2),
+                                                        Colors.white
+                                                            .withOpacity(0.1),
+                                                      ],
+                                                    ),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.autorenew,
+                                                    size: 32,
+                                                    color: Colors.white,
+                                                  ),
                                                 ),
                                               ),
-                                              const SizedBox(width: 16),
+                                              const SizedBox(width: 18),
                                               Text(
                                                 AppLocalizations.of(
                                                       context,
                                                     )?.spin ??
                                                     'Spin',
                                                 style: const TextStyle(
-                                                  fontSize: 22,
-                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 26,
+                                                  fontWeight: FontWeight.w900,
                                                   color: Colors.white,
-                                                  letterSpacing: 1.0,
+                                                  letterSpacing: 2.0,
+                                                  height: 1.2,
+                                                  shadows: [
+                                                    Shadow(
+                                                      color: Colors.black38,
+                                                      blurRadius: 6,
+                                                      offset: Offset(0, 3),
+                                                    ),
+                                                    Shadow(
+                                                      color: Colors.black12,
+                                                      blurRadius: 2,
+                                                      offset: Offset(0, 1),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
                                             ],

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/history_service.dart';
 import '../models/timer_history.dart';
 import '../services/app_localizations.dart';
@@ -56,6 +57,9 @@ class _TimerPageState extends State<TimerPage> {
       _sessionStartTime = DateTime.now();
       _elapsedSeconds = 0;
     }
+
+    // 타이머 시작 알림 소리 재생
+    SystemSound.play(SystemSoundType.click);
 
     setState(() {
       _isRunning = true;
@@ -176,6 +180,9 @@ class _TimerPageState extends State<TimerPage> {
           .then((_) {
             // 저장 완료 후 휴식 시간 시작
             if (mounted) {
+              // Break 전환 알림 소리 재생
+              SystemSound.play(SystemSoundType.alert);
+
               setState(() {
                 _currentState = TimerState.breakTime;
                 _remainingSeconds = _originalBreakSeconds;
@@ -189,6 +196,9 @@ class _TimerPageState extends State<TimerPage> {
             print('Error saving session: $error');
             // 저장 실패해도 휴식 시간은 시작
             if (mounted) {
+              // Break 전환 알림 소리 재생
+              SystemSound.play(SystemSoundType.alert);
+
               setState(() {
                 _currentState = TimerState.breakTime;
                 _remainingSeconds = _originalBreakSeconds;
@@ -287,25 +297,53 @@ class _TimerPageState extends State<TimerPage> {
                 Text(
                   _getStateLabel(context),
                   style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
                     color: Colors.white,
+                    letterSpacing: 1.0,
+                    height: 1.2,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black26,
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   '${widget.focusMinutes} ${AppLocalizations.of(context)?.seconds ?? 'seconds'}',
                   style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withOpacity(0.9),
-                    fontWeight: FontWeight.normal,
+                    fontSize: 13,
+                    color: Colors.white.withOpacity(0.95),
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                    height: 1.3,
                   ),
                 ),
               ],
             ),
             centerTitle: true,
-            leading: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
+            leading: Container(
+              margin: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    spreadRadius: 0,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 22),
+                onPressed: () => Navigator.pop(context),
+                padding: EdgeInsets.zero,
+              ),
             ),
           ),
           body: SafeArea(
@@ -323,18 +361,34 @@ class _TimerPageState extends State<TimerPage> {
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            // 외곽 진행 링 (두꺼운 링)
-                            SizedBox(
+                            // 외곽 진행 링 (두꺼운 링) - 그라데이션 효과를 위한 컨테이너
+                            Container(
                               width: 320,
                               height: 320,
-                              child: CircularProgressIndicator(
-                                value: _getProgress(),
-                                strokeWidth: 20,
-                                backgroundColor: stateColor.withOpacity(0.15),
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  stateColor,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: SweepGradient(
+                                  startAngle: 0,
+                                  endAngle: 3.14159 * 2,
+                                  colors: [
+                                    stateColor.withOpacity(0.2),
+                                    stateColor.withOpacity(0.1),
+                                    stateColor.withOpacity(0.2),
+                                  ],
                                 ),
-                                strokeCap: StrokeCap.round,
+                              ),
+                              child: SizedBox(
+                                width: 320,
+                                height: 320,
+                                child: CircularProgressIndicator(
+                                  value: _getProgress(),
+                                  strokeWidth: 22,
+                                  backgroundColor: stateColor.withOpacity(0.12),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    stateColor,
+                                  ),
+                                  strokeCap: StrokeCap.round,
+                                ),
                               ),
                             ),
                             // 내부 원형 배경
@@ -342,13 +396,29 @@ class _TimerPageState extends State<TimerPage> {
                               width: 280,
                               height: 280,
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Colors.white,
+                                    Colors.grey.shade50,
+                                    Colors.white,
+                                  ],
+                                  stops: const [0.0, 0.5, 1.0],
+                                ),
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: stateColor.withOpacity(0.1),
-                                    blurRadius: 20,
-                                    spreadRadius: 2,
+                                    color: stateColor.withOpacity(0.15),
+                                    blurRadius: 25,
+                                    spreadRadius: 3,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 15,
+                                    spreadRadius: 1,
+                                    offset: const Offset(0, 2),
                                   ),
                                 ],
                               ),
@@ -359,34 +429,45 @@ class _TimerPageState extends State<TimerPage> {
                                   Text(
                                     _getStateLabel(context),
                                     style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey.shade800,
-                                      letterSpacing: 0.5,
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.grey.shade900,
+                                      letterSpacing: 1.2,
+                                      height: 1.2,
                                     ),
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 20),
                                   // 시간 표시
                                   Text(
                                     _formatTime(_remainingSeconds),
                                     style: TextStyle(
-                                      fontSize: 64,
-                                      fontWeight: FontWeight.bold,
+                                      fontSize: 72,
+                                      fontWeight: FontWeight.w900,
                                       color: Colors.grey.shade900,
                                       fontFeatures: [
                                         const FontFeature.tabularFigures(),
                                       ],
-                                      letterSpacing: -2,
+                                      letterSpacing: -1,
+                                      height: 1.1,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 20),
                                   // 상태 텍스트
                                   Text(
                                     _getStatusText(context),
                                     style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.grey.shade600,
-                                      fontWeight: FontWeight.w500,
+                                      fontSize: 18,
+                                      color: Colors.grey.shade700,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.5,
+                                      height: 1.3,
                                     ),
                                   ),
                                 ],
@@ -400,26 +481,54 @@ class _TimerPageState extends State<TimerPage> {
                   const SizedBox(height: 60),
                   // Stop 버튼
                   if (_isRunning)
-                    SizedBox(
+                    Container(
                       width: double.infinity,
-                      height: 56,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [stateColor, stateColor.withOpacity(0.8)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                            color: stateColor.withOpacity(0.5),
+                            blurRadius: 20,
+                            spreadRadius: 0,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
                       child: ElevatedButton(
                         onPressed: _stopTimer,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: stateColor,
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(30),
                           ),
-                          elevation: 4,
-                          shadowColor: stateColor.withOpacity(0.3),
                         ),
                         child: Text(
                           AppLocalizations.of(context)?.stop ?? 'Stop',
                           style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.5,
+                            height: 1.2,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black38,
+                                blurRadius: 6,
+                                offset: Offset(0, 3),
+                              ),
+                              Shadow(
+                                color: Colors.black12,
+                                blurRadius: 2,
+                                offset: Offset(0, 1),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -429,26 +538,88 @@ class _TimerPageState extends State<TimerPage> {
                       children: [
                         // Start/Pause 버튼
                         Expanded(
-                          child: SizedBox(
-                            height: 56,
+                          child: Container(
+                            height: 60,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  stateColor,
+                                  stateColor.withOpacity(0.8),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(30),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: stateColor.withOpacity(0.5),
+                                  blurRadius: 20,
+                                  spreadRadius: 0,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
                             child: ElevatedButton.icon(
                               onPressed: _startTimer,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: stateColor,
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(30),
                                 ),
-                                elevation: 4,
-                                shadowColor: stateColor.withOpacity(0.3),
                               ),
-                              icon: const Icon(Icons.play_arrow, size: 24),
+                              icon: SizedBox(
+                                width: 40,
+                                height: 40,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        Colors.white.withOpacity(0.3),
+                                        Colors.white.withOpacity(0.2),
+                                      ],
+                                    ),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.white.withOpacity(0.3),
+                                        blurRadius: 8,
+                                        spreadRadius: 1,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.play_arrow,
+                                      size: 24,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
                               label: Text(
                                 AppLocalizations.of(context)?.start ?? 'Start',
                                 style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.5,
+                                  height: 1.2,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black38,
+                                      blurRadius: 6,
+                                      offset: Offset(0, 3),
+                                    ),
+                                    Shadow(
+                                      color: Colors.black12,
+                                      blurRadius: 2,
+                                      offset: Offset(0, 1),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -456,21 +627,57 @@ class _TimerPageState extends State<TimerPage> {
                         ),
                         const SizedBox(width: 12),
                         // Reset 버튼
-                        SizedBox(
-                          height: 56,
-                          child: OutlinedButton(
-                            onPressed: _resetTimer,
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.grey.shade700,
-                              side: BorderSide(
-                                color: Colors.grey.shade300,
-                                width: 1.5,
+                        Container(
+                          height: 60,
+                          width: 60,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Colors.white, Colors.grey.shade50],
+                            ),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.4),
+                                blurRadius: 15,
+                                spreadRadius: 0,
+                                offset: const Offset(0, 5),
                               ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 8,
+                                spreadRadius: 0,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: _resetTimer,
+                              borderRadius: BorderRadius.circular(30),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Colors.grey.shade100,
+                                      Colors.white,
+                                    ],
+                                  ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.refresh,
+                                    size: 28,
+                                    color: Colors.grey.shade800,
+                                  ),
+                                ),
                               ),
                             ),
-                            child: const Icon(Icons.refresh, size: 24),
                           ),
                         ),
                       ],
