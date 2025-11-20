@@ -1,0 +1,33 @@
+# Android 키스토어 생성 명령어
+# 아래 명령어를 터미널에서 실행하세요
+
+# 기본 명령어 형식:
+keytool -genkey -v -keystore [키스토어파일명].jks -keyalg RSA -keysize 2048 -validity 10000 -alias [앨리어스명]
+
+# 실제 예시 (프로젝트에 맞게 수정):
+keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+
+# 명령어 설명:
+# -genkey: 키 쌍 생성
+# -v: 상세 출력 (verbose)
+# -keystore: 키스토어 파일명
+# -keyalg: 키 알고리즘 (RSA 권장)
+# -keysize: 키 크기 (2048 또는 4096)
+# -validity: 유효 기간 (일 단위, 10000 = 약 27년)
+# -alias: 키 별칭 (앱 서명에 사용)
+
+# 실행 시 입력할 정보:
+# 1. 키스토어 비밀번호 (Keystore password)
+# 2. 키 비밀번호 (Key password) - 키스토어 비밀번호와 동일하게 설정 가능
+# 3. 이름 (First and Last Name)
+# 4. 조직 단위 (Organizational Unit)
+# 5. 조직 (Organization)
+# 6. 도시 (City or Locality)
+# 7. 주/도 (State or Province)
+# 8. 국가 코드 (Country Code) - 예: KR
+
+# 중요 사항:
+# - 키스토어 파일과 비밀번호는 안전하게 보관하세요
+# - 분실하면 앱 업데이트가 불가능합니다
+# - 키스토어 파일은 버전 관리 시스템에 올리지 마세요
+

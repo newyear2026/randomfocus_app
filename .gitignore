@@ -43,3 +43,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Android 키스토어 파일 (보안상 중요)
+*.jks
+*.keystore
+key.properties
+android/key.properties
