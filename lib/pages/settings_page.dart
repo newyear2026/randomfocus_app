@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../widgets/slide_in_widget.dart';
 import '../services/language_service.dart';
 import '../services/app_localizations.dart';
+import 'icon_preview_page.dart';
 
 class SettingsPage extends StatefulWidget {
   final Function(Locale)? onLanguageChanged;
@@ -453,7 +454,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         builder: (context) => AlertDialog(
                           title: Text(
                             AppLocalizations.of(context)?.appTitle ??
-                                'Random Pomodoro Timer',
+                                'RandomFocus',
                             style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w900,
@@ -461,7 +462,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                           ),
                           content: Text(
-                            '${AppLocalizations.of(context)?.appTitle ?? 'Random Pomodoro Timer'}\n\n'
+                            '${AppLocalizations.of(context)?.appTitle ?? 'RandomFocus'}\n\n'
                             '${AppLocalizations.of(context)?.appVersion ?? 'Version 1.0.0'}\n\n'
                             '${AppLocalizations.of(context)?.appDescription ?? 'An app to help you maintain focus with random timer sessions.'}',
                             style: TextStyle(
@@ -723,6 +724,105 @@ class _SettingsPageState extends State<SettingsPage> {
                           );
                         }
                       }
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // 앱 아이콘 미리보기 (개발용)
+              SlideInWidget(
+                index: 5,
+                child: Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.deepPurple.withOpacity(0.08),
+                        blurRadius: 12,
+                        spreadRadius: 0,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
+                    ),
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.deepPurple.shade200,
+                            Colors.deepPurple.shade100,
+                            Colors.purple.shade50,
+                          ],
+                          stops: const [0.0, 0.5, 1.0],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.deepPurple.withOpacity(0.25),
+                            blurRadius: 8,
+                            spreadRadius: 0,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.deepPurple.shade700,
+                              Colors.deepPurple.shade800,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.image_outlined,
+                          size: 26,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    title: const Text(
+                      '앱 아이콘 미리보기',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
+                        height: 1.3,
+                      ),
+                    ),
+                    subtitle: const Text(
+                      '룰렛 휠 아이콘 미리보기 및 저장',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
+                        height: 1.4,
+                      ),
+                    ),
+                    trailing: const Icon(Icons.chevron_right, size: 28),
+                    minVerticalPadding: 12,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const IconPreviewPage(),
+                        ),
+                      );
                     },
                   ),
                 ),

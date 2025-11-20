@@ -50,7 +50,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Random Pomodoro',
+      title: 'RandomFocus',
       locale: _locale,
       supportedLocales: LanguageService.supportedLocales,
       localizationsDelegates: [

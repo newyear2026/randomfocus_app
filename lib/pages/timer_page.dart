@@ -24,7 +24,7 @@ class _TimerPageState extends State<TimerPage> {
   TimerState _currentState = TimerState.focus;
   bool _isRunning = false;
   int _originalFocusSeconds = 0;
-  final int _originalBreakSeconds = 10; // 10초 고정 (테스트용)
+  final int _originalBreakSeconds = 600; // 10분 (600초)
 
   // 세션 추적 변수
   String? _sessionId;

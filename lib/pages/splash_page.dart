@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_icon_generator.dart';
 
 class SplashPage extends StatefulWidget {
   final Widget child;
@@ -14,6 +15,7 @@ class _SplashPageState extends State<SplashPage>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  late Animation<double> _rotationAnimation;
 
   @override
   void initState() {
@@ -35,6 +37,13 @@ class _SplashPageState extends State<SplashPage>
       CurvedAnimation(
         parent: _animationController,
         curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+
+    _rotationAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 1.0, curve: Curves.linear),
       ),
     );
 
@@ -77,9 +86,9 @@ class _SplashPageState extends State<SplashPage>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Colors.deepPurple.shade700,
-              Colors.deepPurple.shade400,
-              Colors.purple.shade300,
+              const Color(0xFF6366F1), // 보라색 (룰렛 휠 배경색과 일치)
+              const Color(0xFF6366F1).withOpacity(0.9),
+              const Color(0xFF6366F1).withOpacity(0.8),
             ],
           ),
         ),
@@ -91,175 +100,135 @@ class _SplashPageState extends State<SplashPage>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // 앱 아이콘 - 더 크고 세련되게
+                  // 룰렛 휠 로고 - 회전 애니메이션과 함께
                   Container(
-                    height: 150,
-                    width: 150,
+                    width: 200,
+                    height: 200,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 30,
+                          spreadRadius: 5,
+                          offset: const Offset(0, 15),
+                        ),
+                        BoxShadow(
+                          color: Colors.white.withOpacity(0.2),
+                          blurRadius: 40,
+                          spreadRadius: 8,
+                          offset: const Offset(0, 20),
+                        ),
+                      ],
+                    ),
+                    child: RotationTransition(
+                      turns: _rotationAnimation,
+                      child: const AppIconGenerator(
+                        size: 200,
+                        numbers: [5, 10, 10, 15, 20, 25],
+                        showBackground: false, // 배경 제거 - 스플래시 화면 배경과 일치
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  // 앱 이름 - RandomFocus (룰렛 휠 색상과 조화)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Colors.white.withOpacity(0.4),
-                          Colors.white.withOpacity(0.25),
+                          Colors.white.withOpacity(0.2),
                           Colors.white.withOpacity(0.15),
                         ],
-                        stops: const [0.0, 0.5, 1.0],
                       ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.25),
-                          blurRadius: 25,
-                          spreadRadius: 3,
-                          offset: const Offset(0, 10),
-                        ),
-                        BoxShadow(
-                          color: Colors.white.withOpacity(0.3),
-                          blurRadius: 35,
-                          spreadRadius: 5,
-                          offset: const Offset(0, 15),
-                        ),
-                        BoxShadow(
-                          color: Colors.deepPurple.withOpacity(0.2),
-                          blurRadius: 20,
-                          spreadRadius: 2,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Colors.white.withOpacity(0.2),
-                            Colors.white.withOpacity(0.1),
-                          ],
-                        ),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.4),
-                          width: 3,
-                        ),
-                      ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Colors.deepPurple.shade600,
-                              Colors.deepPurple.shade800,
-                              Colors.purple.shade700,
-                            ],
-                            stops: const [0.0, 0.5, 1.0],
-                          ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.timer_outlined,
-                          size: 75,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  // 앱 이름 - RANDOM POMODORO
-                  Column(
-                    children: [
-                      ShaderMask(
-                        shaderCallback: (bounds) => LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Colors.white,
-                            Colors.white.withOpacity(0.9),
-                            Colors.white.withOpacity(0.8),
-                          ],
-                        ).createShader(bounds),
-                        child: Text(
-                          'RANDOM',
-                          style: TextStyle(
-                            fontSize: 42,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: 4.5,
-                            height: 1.1,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black.withOpacity(0.4),
-                                blurRadius: 12,
-                                offset: const Offset(0, 5),
-                              ),
-                              Shadow(
-                                color: Colors.deepPurple.withOpacity(0.3),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      ShaderMask(
-                        shaderCallback: (bounds) => LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Colors.white,
-                            Colors.white.withOpacity(0.9),
-                            Colors.white.withOpacity(0.8),
-                          ],
-                        ).createShader(bounds),
-                        child: Text(
-                          'POMODORO',
-                          style: TextStyle(
-                            fontSize: 42,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: 4.5,
-                            height: 1.1,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black.withOpacity(0.4),
-                                blurRadius: 12,
-                                offset: const Offset(0, 5),
-                              ),
-                              Shadow(
-                                color: Colors.deepPurple.withOpacity(0.3),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 56),
-                  // 로딩 인디케이터 - 더 세련되게
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: Colors.white.withOpacity(0.3),
                         width: 2,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: ShaderMask(
+                      shaderCallback: (bounds) => LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white,
+                          Colors.white.withOpacity(0.95),
+                          Colors.white.withOpacity(0.9),
+                        ],
+                      ).createShader(bounds),
+                      child: Text(
+                        'RandomFocus',
+                        style: TextStyle(
+                          fontSize: 38,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 3.5,
+                          height: 1.2,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withOpacity(0.5),
+                              blurRadius: 15,
+                              offset: const Offset(0, 6),
+                            ),
+                            Shadow(
+                              color: const Color(0xFF6366F1).withOpacity(0.4),
+                              blurRadius: 25,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 48),
+                  // 로딩 인디케이터 - 룰렛 휠 스타일
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withOpacity(0.25),
+                          Colors.white.withOpacity(0.15),
+                        ],
+                      ),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.4),
+                        width: 2.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(4.0),
+                      padding: const EdgeInsets.all(6.0),
                       child: CircularProgressIndicator(
-                        strokeWidth: 3,
+                        strokeWidth: 3.5,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          Colors.white.withOpacity(0.9),
+                          Colors.white.withOpacity(0.95),
                         ),
+                        backgroundColor: Colors.white.withOpacity(0.2),
                       ),
                     ),
                   ),

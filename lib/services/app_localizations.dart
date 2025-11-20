@@ -74,7 +74,7 @@ class AppLocalizations {
       'gotIt': 'Got it',
       'close': 'Close',
       'selectLanguage': 'Select Language',
-      'appTitle': 'Random Pomodoro',
+      'appTitle': 'RandomFocus',
       'appVersion': 'Version 1.0.0',
       'appDescription':
           'An app to help you maintain focus with random timer sessions.',
@@ -163,7 +163,7 @@ class AppLocalizations {
       'gotIt': 'Entendido',
       'close': 'Cerrar',
       'selectLanguage': 'Seleccionar Idioma',
-      'appTitle': 'Pomodoro Aleatorio',
+      'appTitle': 'RandomFocus',
       'appVersion': 'Versión 1.0.0',
       'appDescription':
           'Una aplicación para ayudarte a mantener el enfoque con sesiones de temporizador aleatorias.',
@@ -251,7 +251,7 @@ class AppLocalizations {
       'gotIt': '知道了',
       'close': '关闭',
       'selectLanguage': '选择语言',
-      'appTitle': '随机番茄钟',
+      'appTitle': 'RandomFocus',
       'appVersion': '版本 1.0.0',
       'appDescription': '一款通过随机计时器会话帮助您保持专注的应用。',
 

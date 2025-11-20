@@ -14,8 +14,8 @@ class RoulettePage extends StatefulWidget {
 }
 
 class _RoulettePageState extends State<RoulettePage> {
-  // 룰렛 시간 옵션 (초 단위 - 테스트용)
-  final _times = [10, 15, 20, 30, 60, 90]; // 초 단위
+  // 룰렛 시간 옵션 (분 단위)
+  final _times = [25, 30, 45, 50, 60, 90]; // 분 단위
   late StreamController<int> _wheelController;
   bool _isLoading = true;
   int? _pendingIndex; // 룰렛 결과 (애니메이션 끝난 뒤 사용)
@@ -92,7 +92,8 @@ class _RoulettePageState extends State<RoulettePage> {
   void _handleWheelAnimationEnd() async {
     if (_pendingIndex == null) return;
 
-    final selectedSeconds = _times[_pendingIndex!]; // 초 단위
+    final selectedMinutes = _times[_pendingIndex!]; // 분 단위
+    final selectedSeconds = selectedMinutes * 60; // 초 단위로 변환
 
     if (!mounted) return;
 
@@ -109,6 +110,7 @@ class _RoulettePageState extends State<RoulettePage> {
   }
 
   Future<void> _showResultDialog(int selectedSeconds) async {
+    final selectedMinutes = selectedSeconds ~/ 60; // 분 단위로 변환
     final result = await showDialog<String>(
       context: context,
       barrierDismissible: false,
@@ -173,7 +175,7 @@ class _RoulettePageState extends State<RoulettePage> {
               child: Column(
                 children: [
                   Text(
-                    '$selectedSeconds',
+                    '$selectedMinutes',
                     style: TextStyle(
                       fontSize: 64,
                       fontWeight: FontWeight.w900,
@@ -200,7 +202,7 @@ class _RoulettePageState extends State<RoulettePage> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    AppLocalizations.of(context)?.seconds ?? 'seconds',
+                    AppLocalizations.of(context)?.minutes ?? 'minutes',
                     style: TextStyle(
                       fontSize: 22,
                       color: Colors.grey.shade800,
@@ -345,7 +347,7 @@ class _RoulettePageState extends State<RoulettePage> {
       if (!mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => TimerPage(focusMinutes: selectedSeconds),
+          builder: (_) => TimerPage(focusMinutes: selectedSeconds), // 초 단위로 전달
         ),
       );
     }
@@ -388,7 +390,7 @@ class _RoulettePageState extends State<RoulettePage> {
             title: Column(
               children: [
                 Text(
-                  AppLocalizations.of(context)?.appTitle ?? 'Random Pomodoro',
+                  AppLocalizations.of(context)?.appTitle ?? 'RandomFocus',
                   style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
@@ -593,7 +595,9 @@ class _RoulettePageState extends State<RoulettePage> {
                                                   ),
                                                 ),
                                                 style: FortuneItemStyle(
-                                                  color: _colorForTime(t),
+                                                  color: _colorForTime(
+                                                    t * 60,
+                                                  ), // 분을 초로 변환
                                                   borderColor: Colors.white,
                                                   borderWidth: 3,
                                                 ),
@@ -772,23 +776,25 @@ class _RoulettePageState extends State<RoulettePage> {
   }
 }
 
-/// 시간별로 다른 색상 할당 (현대적인 그라데이션 색상)
-/// 초 단위 값에 맞게 색상 할당 (테스트용)
+/// 시간별로 다른 색상 할당 (이미지와 동일한 색상 순서)
+/// 분 단위 값에 맞게 색상 할당
+/// 색상 순서: 주황(25), 빨강(30), 청록(45), 보라(50), 파랑(60), 분홍(90)
 Color _colorForTime(int seconds) {
-  switch (seconds) {
-    case 10:
-      return const Color(0xFFEF4444); // 레드
-    case 15:
-      return const Color(0xFF10B981); // 그린
-    case 20:
-      return const Color(0xFF3B82F6); // 블루
+  final minutes = seconds ~/ 60; // 분 단위로 변환
+  switch (minutes) {
+    case 25:
+      return const Color(0xFFFF9800); // 주황색
     case 30:
-      return const Color(0xFF6366F1); // 인디고
+      return const Color(0xFFEF4444); // 빨간색
+    case 45:
+      return const Color(0xFF10B981); // 청록색
+    case 50:
+      return const Color(0xFF6366F1); // 보라색
     case 60:
-      return const Color(0xFF8B5CF6); // 보라
+      return const Color(0xFF3B82F6); // 파란색
     case 90:
-      return const Color(0xFFEC4899); // 핑크
+      return const Color(0xFFEC4899); // 분홍색
     default:
-      return const Color(0xFF6366F1); // 기본 인디고
+      return const Color(0xFF6366F1); // 기본 보라색
   }
 }
