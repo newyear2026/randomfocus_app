@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import '../services/history_service.dart';
 import '../models/timer_history.dart';
 import '../services/app_localizations.dart';
@@ -38,14 +39,9 @@ class _TimerPageState extends State<TimerPage> {
   @override
   void initState() {
     super.initState();
-    print('[Timer] initState() 호출됨');
-    // 초 단위로 직접 사용 (테스트용)
-    _originalFocusSeconds = widget.focusMinutes; // 이미 초 단위
+    _originalFocusSeconds = widget.focusMinutes; // 초 단위
     _remainingSeconds = _originalFocusSeconds;
     _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
-
-    // AudioPlayer 초기화 확인
-    print('[Timer] AudioPlayer 초기화 완료');
   }
 
   @override
@@ -56,41 +52,33 @@ class _TimerPageState extends State<TimerPage> {
     if (!_sessionSaved && _sessionStartTime != null && _elapsedSeconds > 0) {
       _saveSession(SessionStatus.stopped);
     }
+    // 화면 잠금 해제 (페이지를 벗어날 때)
+    WakelockPlus.disable().catchError((error) {
+      // 에러 무시
+    });
     super.dispose();
   }
 
   /// 사운드 재생 함수
   Future<void> _playStartSound() async {
-    print('[Sound] 🎵 사운드 재생 함수 호출됨');
     try {
       // 이전 재생이 있으면 중지 (에러 무시)
       try {
         await _audioPlayer.stop();
-        print('[Sound] 이전 재생 중지 완료');
       } catch (e) {
-        print('[Sound] 이전 재생 중지 실패 (무시): $e');
+        // 에러 무시
       }
 
-      print('[Sound] 사운드 파일 로드 시작: assets/sounds/START_SOUND.mp3');
       // just_audio는 setAsset을 먼저 호출하고 play()를 호출해야 함
       await _audioPlayer.setAsset('assets/sounds/START_SOUND.mp3');
-      print('[Sound] 사운드 파일 로드 완료');
-
-      print('[Sound] 사운드 재생 시작');
       await _audioPlayer.play();
-      print('[Sound] ✅ 사운드 재생 성공: START_SOUND.mp3');
-    } catch (e, stackTrace) {
-      print('[Sound] ❌ 사운드 재생 실패: $e');
-      print('[Sound] 에러 타입: ${e.runtimeType}');
-      print('[Sound] 스택 트레이스: $stackTrace');
-      print('[Sound] 사운드 파일 경로: assets/sounds/START_SOUND.mp3');
+    } catch (e) {
+      // 사운드 재생 실패 시 조용히 처리 (사용자 경험에 영향 없음)
     }
   }
 
   void _startTimer() {
-    print('[Timer] _startTimer() 호출됨');
     if (_isRunning) {
-      print('[Timer] 이미 실행 중이므로 리턴');
       return;
     }
 
@@ -102,7 +90,12 @@ class _TimerPageState extends State<TimerPage> {
 
     // Start 버튼 클릭 시 사운드 재생 (비동기로 실행, 에러는 무시)
     _playStartSound().catchError((error) {
-      print('[Timer] 사운드 재생 중 에러 발생 (무시): $error');
+      // 에러 무시
+    });
+
+    // 화면이 꺼지지 않도록 설정
+    WakelockPlus.enable().catchError((error) {
+      // 에러 무시 (권한이 없거나 지원하지 않는 경우)
     });
 
     setState(() {
@@ -136,6 +129,11 @@ class _TimerPageState extends State<TimerPage> {
       await _saveSession(SessionStatus.stopped);
     }
 
+    // 화면 잠금 해제 (다시 정상적으로 꺼질 수 있도록)
+    WakelockPlus.disable().catchError((error) {
+      // 에러 무시
+    });
+
     setState(() {
       _isRunning = false;
     });
@@ -151,6 +149,11 @@ class _TimerPageState extends State<TimerPage> {
         !_sessionSaved) {
       await _saveSession(SessionStatus.stopped);
     }
+
+    // 화면 잠금 해제 (다시 정상적으로 꺼질 수 있도록)
+    WakelockPlus.disable().catchError((error) {
+      // 에러 무시
+    });
 
     setState(() {
       _isRunning = false;
@@ -226,7 +229,7 @@ class _TimerPageState extends State<TimerPage> {
             if (mounted) {
               // Focus가 끝나고 Break로 넘어갈 때 사운드 재생 (비동기로 실행)
               _playStartSound().catchError((error) {
-                print('[Timer] Focus→Break 전환 시 사운드 재생 에러 (무시): $error');
+                // 에러 무시
               });
 
               setState(() {
@@ -234,17 +237,17 @@ class _TimerPageState extends State<TimerPage> {
                 _remainingSeconds = _originalBreakSeconds;
                 _isRunning = false;
               });
-              // 자동으로 휴식 타이머 시작
+              // 자동으로 휴식 타이머 시작 (화면은 계속 켜둠)
               _startTimer();
             }
           })
           .catchError((error) {
-            print('Error saving session: $error');
+            // 세션 저장 실패 시 조용히 처리
             // 저장 실패해도 휴식 시간은 시작
             if (mounted) {
               // Focus가 끝나고 Break로 넘어갈 때 사운드 재생 (비동기로 실행)
               _playStartSound().catchError((error) {
-                print('[Timer] Focus→Break 전환 시 사운드 재생 에러 (무시): $error');
+                // 에러 무시
               });
 
               setState(() {
@@ -256,7 +259,10 @@ class _TimerPageState extends State<TimerPage> {
             }
           });
     } else {
-      // 휴식 시간 종료 -> 룰렛 페이지로 돌아가기
+      // 휴식 시간 종료 -> 화면 잠금 해제 후 룰렛 페이지로 돌아가기
+      WakelockPlus.disable().catchError((error) {
+        // 에러 무시
+      });
       if (mounted) {
         Navigator.pop(context);
       }
