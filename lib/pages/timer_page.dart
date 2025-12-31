@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/history_service.dart';
 import '../models/timer_history.dart';
 import '../services/app_localizations.dart';
+import '../services/ad_ids.dart';
 import '../widgets/banner_ad_widget.dart';
 
 class TimerPage extends StatefulWidget {
@@ -36,27 +39,94 @@ class _TimerPageState extends State<TimerPage> {
   // 사운드 재생용 AudioPlayer
   final AudioPlayer _audioPlayer = AudioPlayer();
 
+  // 전면 광고
+  InterstitialAd? _interstitialAd;
+  bool _isInterstitialAdReady = false;
+
   @override
   void initState() {
     super.initState();
     _originalFocusSeconds = widget.focusMinutes; // 초 단위
     _remainingSeconds = _originalFocusSeconds;
     _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
+    // 전면 광고 로드 (웹이 아닐 때만)
+    if (!kIsWeb) {
+      _loadInterstitialAd();
+    }
   }
 
   @override
   void dispose() {
     _timer?.cancel();
     _audioPlayer.dispose();
+    _interstitialAd?.dispose();
     // 페이지를 벗어날 때 세션이 저장되지 않았고 실행 중이었다면 중단으로 저장
     if (!_sessionSaved && _sessionStartTime != null && _elapsedSeconds > 0) {
       _saveSession(SessionStatus.stopped);
     }
-    // 화면 잠금 해제 (페이지를 벗어날 때)
-    WakelockPlus.disable().catchError((error) {
-      // 에러 무시
-    });
+    // 화면 잠금 해제 (페이지를 벗어날 때, 웹이 아닐 때만)
+    if (!kIsWeb) {
+      WakelockPlus.disable().catchError((error) {
+        // 에러 무시
+      });
+    }
     super.dispose();
+  }
+
+  /// 전면 광고 로드
+  void _loadInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: AdIds.getInterstitialAdUnitId(),
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          _interstitialAd = ad;
+          _isInterstitialAdReady = true;
+          // 광고 닫힘 이벤트 리스너 설정
+          ad.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) {
+              ad.dispose();
+              _interstitialAd = null;
+              _isInterstitialAdReady = false;
+              // 광고가 닫힌 후 페이지 닫기
+              if (mounted) {
+                Navigator.pop(context);
+              }
+              // 다음 광고 미리 로드
+              _loadInterstitialAd();
+            },
+            onAdFailedToShowFullScreenContent: (ad, error) {
+              ad.dispose();
+              _interstitialAd = null;
+              _isInterstitialAdReady = false;
+              // 광고 표시 실패 시 그냥 페이지 닫기
+              if (mounted) {
+                Navigator.pop(context);
+              }
+              // 다음 광고 미리 로드
+              _loadInterstitialAd();
+            },
+          );
+        },
+        onAdFailedToLoad: (error) {
+          _interstitialAd = null;
+          _isInterstitialAdReady = false;
+          // 광고 로드 실패는 조용히 처리 (사용자 경험에 영향 없음)
+        },
+      ),
+    );
+  }
+
+  /// 전면 광고 표시
+  void _showInterstitialAd() {
+    if (_isInterstitialAdReady && _interstitialAd != null) {
+      _interstitialAd!.show();
+    } else {
+      // 광고가 준비되지 않았으면 바로 페이지 닫기
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    }
   }
 
   /// 사운드 재생 함수
@@ -93,10 +163,12 @@ class _TimerPageState extends State<TimerPage> {
       // 에러 무시
     });
 
-    // 화면이 꺼지지 않도록 설정
-    WakelockPlus.enable().catchError((error) {
-      // 에러 무시 (권한이 없거나 지원하지 않는 경우)
-    });
+    // 화면이 꺼지지 않도록 설정 (웹이 아닐 때만)
+    if (!kIsWeb) {
+      WakelockPlus.enable().catchError((error) {
+        // 에러 무시 (권한이 없거나 지원하지 않는 경우)
+      });
+    }
 
     setState(() {
       _isRunning = true;
@@ -129,10 +201,12 @@ class _TimerPageState extends State<TimerPage> {
       await _saveSession(SessionStatus.stopped);
     }
 
-    // 화면 잠금 해제 (다시 정상적으로 꺼질 수 있도록)
-    WakelockPlus.disable().catchError((error) {
-      // 에러 무시
-    });
+    // 화면 잠금 해제 (다시 정상적으로 꺼질 수 있도록, 웹이 아닐 때만)
+    if (!kIsWeb) {
+      WakelockPlus.disable().catchError((error) {
+        // 에러 무시
+      });
+    }
 
     setState(() {
       _isRunning = false;
@@ -150,10 +224,12 @@ class _TimerPageState extends State<TimerPage> {
       await _saveSession(SessionStatus.stopped);
     }
 
-    // 화면 잠금 해제 (다시 정상적으로 꺼질 수 있도록)
-    WakelockPlus.disable().catchError((error) {
-      // 에러 무시
-    });
+    // 화면 잠금 해제 (다시 정상적으로 꺼질 수 있도록, 웹이 아닐 때만)
+    if (!kIsWeb) {
+      WakelockPlus.disable().catchError((error) {
+        // 에러 무시
+      });
+    }
 
     setState(() {
       _isRunning = false;
@@ -170,34 +246,36 @@ class _TimerPageState extends State<TimerPage> {
     });
   }
 
-  Future<void> _endSession() async {
+  /// 뒤로 가기 확인 다이얼로그
+  Future<void> _showBackDialog() async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-          AppLocalizations.of(context)?.endFocusSession ?? 'End Focus Session',
-        ),
-        content: Text(
-          AppLocalizations.of(context)?.endSessionConfirm ??
-              'Are you sure you want to end this session?',
-        ),
+        title: Text(l10n?.goBack ?? '뒤로 가시겠습니까?'),
+        content: Text(l10n?.goBackConfirm ?? '타이머 페이지를 나가시겠습니까?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(AppLocalizations.of(context)?.cancel ?? 'Cancel'),
+            child: Text(l10n?.cancel ?? '취소'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(AppLocalizations.of(context)?.end ?? 'End'),
+            style: TextButton.styleFrom(foregroundColor: Colors.deepPurple),
+            child: Text(l10n?.goBackButton ?? '뒤로 가기'),
           ),
         ],
       ),
     );
 
     if (confirmed == true && mounted) {
-      await _stopTimer();
-      Navigator.pop(context);
+      // 전면 광고 표시 (웹이 아닐 때만)
+      if (!kIsWeb) {
+        _showInterstitialAd();
+      } else {
+        // 웹에서는 바로 페이지 닫기
+        Navigator.pop(context);
+      }
     }
   }
 
@@ -259,10 +337,12 @@ class _TimerPageState extends State<TimerPage> {
             }
           });
     } else {
-      // 휴식 시간 종료 -> 화면 잠금 해제 후 룰렛 페이지로 돌아가기
-      WakelockPlus.disable().catchError((error) {
-        // 에러 무시
-      });
+      // 휴식 시간 종료 -> 화면 잠금 해제 후 룰렛 페이지로 돌아가기 (웹이 아닐 때만)
+      if (!kIsWeb) {
+        WakelockPlus.disable().catchError((error) {
+          // 에러 무시
+        });
+      }
       if (mounted) {
         Navigator.pop(context);
       }
@@ -333,6 +413,25 @@ class _TimerPageState extends State<TimerPage> {
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
+            automaticallyImplyLeading: !_isRunning,
+            leading: _isRunning
+                ? null
+                : IconButton(
+                    icon: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.deepPurple.shade400,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    onPressed: _showBackDialog,
+                  ),
             flexibleSpace: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -379,26 +478,6 @@ class _TimerPageState extends State<TimerPage> {
               ],
             ),
             centerTitle: true,
-            leading: Container(
-              margin: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 8,
-                    spreadRadius: 0,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white, size: 22),
-                onPressed: () => Navigator.pop(context),
-                padding: EdgeInsets.zero,
-              ),
-            ),
           ),
           body: SafeArea(
             child: Padding(
@@ -735,28 +814,6 @@ class _TimerPageState extends State<TimerPage> {
                           ),
                         ),
                       ],
-                    ),
-                  const SizedBox(height: 16),
-                  // End focus session 링크
-                  if (_currentState == TimerState.focus && _isRunning)
-                    TextButton(
-                      onPressed: _endSession,
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.grey.shade700,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                      ),
-                      child: Text(
-                        AppLocalizations.of(context)?.endFocusSession ??
-                            'End focus session',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          decoration: TextDecoration.underline,
-                          decorationThickness: 1.5,
-                        ),
-                      ),
                     ),
                   const SizedBox(height: 20),
                   // 배너 광고

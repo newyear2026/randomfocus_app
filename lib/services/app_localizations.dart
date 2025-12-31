@@ -54,6 +54,9 @@ class AppLocalizations {
       'stop': 'Stop',
       'endFocusSession': 'End Focus Session',
       'endSessionConfirm': 'Are you sure you want to end this session?',
+      'goBack': 'Would you like to go back?',
+      'goBackConfirm': 'Would you like to exit the timer page?',
+      'goBackButton': 'Go Back',
       'cancel': 'Cancel',
       'end': 'End',
 
@@ -143,6 +146,9 @@ class AppLocalizations {
       'endFocusSession': 'Finalizar Sesión de Enfoque',
       'endSessionConfirm':
           '¿Estás seguro de que quieres finalizar esta sesión?',
+      'goBack': '¿Deseas volver?',
+      'goBackConfirm': '¿Deseas salir de la página del temporizador?',
+      'goBackButton': 'Volver',
       'cancel': 'Cancelar',
       'end': 'Finalizar',
 
@@ -231,6 +237,9 @@ class AppLocalizations {
       'stop': '停止',
       'endFocusSession': '结束专注会话',
       'endSessionConfirm': '确定要结束此会话吗？',
+      'goBack': '要返回吗？',
+      'goBackConfirm': '要退出计时器页面吗？',
+      'goBackButton': '返回',
       'cancel': '取消',
       'end': '结束',
 
@@ -326,6 +335,9 @@ class AppLocalizations {
   String get stop => translate('stop');
   String get endFocusSession => translate('endFocusSession');
   String get endSessionConfirm => translate('endSessionConfirm');
+  String get goBack => translate('goBack');
+  String get goBackConfirm => translate('goBackConfirm');
+  String get goBackButton => translate('goBackButton');
   String get cancel => translate('cancel');
   String get end => translate('end');
   String get notifications => translate('notifications');

@@ -63,13 +63,9 @@ class _RoulettePageState extends State<RoulettePage> {
   }
 
   void _onSpinPressed() async {
-    // 테스트용: _hasSpinsLeft 체크 제거
     if (_isLoading) {
-      print('Spin button pressed but isLoading is true');
       return;
     }
-
-    print('Spin button pressed! Starting spin...');
 
     // Spin 버튼을 누르는 순간 attempts 사용 처리
     await SpinStorage.useSpin();
@@ -78,7 +74,6 @@ class _RoulettePageState extends State<RoulettePage> {
 
     // 룰렛에서 선택될 index
     final index = Random().nextInt(_times.length);
-    print('Selected index: $index, time: ${_times[index]}');
 
     setState(() {
       _pendingIndex = index;
@@ -86,7 +81,6 @@ class _RoulettePageState extends State<RoulettePage> {
 
     // 룰렛 회전 시작
     _wheelController.add(index);
-    print('Wheel controller event sent');
   }
 
   void _handleWheelAnimationEnd() async {
@@ -647,9 +641,6 @@ class _RoulettePageState extends State<RoulettePage> {
                                         onTap: _isLoading
                                             ? null
                                             : () {
-                                                print(
-                                                  'Button onPressed called',
-                                                );
                                                 _onSpinPressed();
                                               },
                                         borderRadius: BorderRadius.circular(36),

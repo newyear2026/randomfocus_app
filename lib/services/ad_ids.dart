@@ -13,7 +13,7 @@ class AdIds {
   // 플랫폼별 배너 광고 단위 ID 가져오기
   // 테스트 모드: true로 설정하면 테스트 광고 ID 사용
   // ⚠️ 출시 전 반드시 false로 변경하세요!
-  static const bool _useTestAds = true; // 테스트용: true, 출시 시 false
+  static const bool _useTestAds = false; // 출시용: false
   
   static String getBannerAdUnitId() {
     // 테스트 광고 사용

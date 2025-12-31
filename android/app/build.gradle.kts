@@ -9,14 +9,14 @@ import java.util.Properties
 import java.io.FileInputStream
 
 // 키스토어 설정 파일 로드
-val keystorePropertiesFile = rootProject.file("../key.properties")
+val keystorePropertiesFile = rootProject.file("key.properties")
 val keystoreProperties = Properties()
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
-    namespace = "com.example.my_first_app"
+    namespace = "com.randomfocus.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -30,8 +30,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.my_first_app"
+        applicationId = "com.randomfocus.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -47,19 +46,18 @@ android {
                 keyPassword = keystoreProperties["keyPassword"] as String
                 storeFile = file("${rootProject.projectDir}/app/${keystoreProperties["storeFile"] as String}")
                 storePassword = keystoreProperties["storePassword"] as String
+            } else {
+                throw GradleException("key.properties 파일을 찾을 수 없습니다. Release 빌드를 위해 키스토어 설정이 필요합니다.")
             }
         }
     }
 
     buildTypes {
         release {
-            // 키스토어를 사용한 서명 설정
-            if (keystorePropertiesFile.exists()) {
-                signingConfig = signingConfigs.getByName("release")
-            } else {
-                // 키스토어 파일이 없으면 debug 키 사용
-                signingConfig = signingConfigs.getByName("debug")
-            }
+            // 키스토어를 사용한 서명 설정 (필수)
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }

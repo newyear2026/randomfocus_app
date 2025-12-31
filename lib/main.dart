@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'pages/home_page.dart';
@@ -9,8 +10,15 @@ import 'services/app_localizations.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Google Mobile Ads 초기화
-  await MobileAds.instance.initialize();
+  // Google Mobile Ads 초기화 (웹이 아닐 때만)
+  if (!kIsWeb) {
+    try {
+      await MobileAds.instance.initialize();
+    } catch (e) {
+      // 초기화 실패 시 조용히 처리
+      debugPrint('MobileAds 초기화 실패: $e');
+    }
+  }
 
   runApp(const MyApp());
 }

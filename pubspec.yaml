@@ -111,7 +111,7 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/app_icon.png"
+  image_path: "assets/images/app_icons.png"
   adaptive_icon_background: "#6366F1"  # 보라색 배경
-  adaptive_icon_foreground: "assets/images/app_icon.png"
+  adaptive_icon_foreground: "assets/images/app_icons.png"
   remove_alpha_ios: true

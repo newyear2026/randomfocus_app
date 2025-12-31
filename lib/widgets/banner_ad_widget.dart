@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/ad_ids.dart';
 
@@ -15,7 +16,6 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   bool _isAdLoaded = false;
   int _retryCount = 0;
   static const int _maxRetries = 5; // 재시도 횟수 증가
-  DateTime? _loadStartTime;
 
   @override
   void initState() {
@@ -25,7 +25,9 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         // 랜덤 지연 (0~500ms)으로 동시 로드 충돌 방지
-        final delay = Duration(milliseconds: (DateTime.now().millisecondsSinceEpoch % 500));
+        final delay = Duration(
+          milliseconds: (DateTime.now().millisecondsSinceEpoch % 500),
+        );
         Future.delayed(delay, () {
           if (mounted) {
             _loadBannerAd();
@@ -36,25 +38,19 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   }
 
   void _loadBannerAd() {
-    if (!mounted) return;
-    
-    _loadStartTime = DateTime.now();
+    if (!mounted || kIsWeb) return; // 웹에서는 광고 로드하지 않음
+
     final adUnitId = AdIds.getBannerAdUnitId();
-    print('[BannerAd] 로드 시작 - Ad Unit ID: $adUnitId (재시도: $_retryCount/$_maxRetries)');
-    
+
     // 이전 광고가 있으면 dispose
     _bannerAd?.dispose();
-    
+
     _bannerAd = BannerAd(
       adUnitId: adUnitId,
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (ad) {
-          final loadTime = _loadStartTime != null 
-              ? DateTime.now().difference(_loadStartTime!).inMilliseconds 
-              : 0;
-          print('[BannerAd] ✅ 로드 성공! (소요 시간: ${loadTime}ms)');
           if (mounted) {
             setState(() {
               _isAdLoaded = true;
@@ -63,45 +59,31 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
           }
         },
         onAdFailedToLoad: (ad, error) {
-          final loadTime = _loadStartTime != null 
-              ? DateTime.now().difference(_loadStartTime!).inMilliseconds 
-              : 0;
-          print('[BannerAd] ❌ 로드 실패 (소요 시간: ${loadTime}ms):');
-          print('  - Error Code: ${error.code}');
-          print('  - Error Message: ${error.message}');
-          print('  - Error Domain: ${error.domain}');
-          if (error.responseInfo != null) {
-            print('  - Response Info: ${error.responseInfo}');
-          }
-          
           ad.dispose();
-          
+
           if (mounted) {
             setState(() {
               _bannerAd = null;
               _isAdLoaded = false;
             });
-            
+
             // 재시도 로직
             if (_retryCount < _maxRetries) {
               _retryCount++;
-              print('[BannerAd] 🔄 재시도 $_retryCount/$_maxRetries...');
               // 재시도 전 대기 시간 (1초, 2초, 3초, 4초, 5초)
               Future.delayed(Duration(seconds: _retryCount), () {
                 if (mounted) {
                   _loadBannerAd();
                 }
               });
-            } else {
-              print('[BannerAd] ⚠️ 최대 재시도 횟수 초과 - 광고 로드 포기');
             }
           }
         },
         onAdOpened: (_) {
-          print('배너 광고 열림');
+          // 광고 열림
         },
         onAdClosed: (_) {
-          print('배너 광고 닫힘');
+          // 광고 닫힘
         },
       ),
     )..load();
@@ -118,10 +100,10 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
     // 광고가 로드되지 않았어도 공간은 유지 (로딩 중 표시)
     if (!_isAdLoaded || _bannerAd == null) {
       // 재시도 횟수가 최대치에 도달했으면 다른 메시지 표시
-      final message = _retryCount >= _maxRetries 
-          ? '광고를 불러올 수 없습니다' 
+      final message = _retryCount >= _maxRetries
+          ? '광고를 불러올 수 없습니다'
           : '광고 로딩 중...';
-      
+
       return Container(
         alignment: Alignment.center,
         width: double.infinity,
@@ -135,8 +117,8 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
             message,
             style: TextStyle(
               fontSize: 12,
-              color: _retryCount >= _maxRetries 
-                  ? Colors.grey.shade600 
+              color: _retryCount >= _maxRetries
+                  ? Colors.grey.shade600
                   : Colors.grey,
             ),
           ),
@@ -152,4 +134,3 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
     );
   }
 }
-
