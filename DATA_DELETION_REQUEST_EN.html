@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RandomFocus - Data Deletion Request</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            font-weight: 900;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+        
+        .header p {
+            font-size: 16px;
+            opacity: 0.95;
+        }
+        
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+        }
+        
+        .section h2 {
+            color: #667eea;
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .section h3 {
+            color: #764ba2;
+            font-size: 20px;
+            font-weight: 700;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        
+        .section p, .section li {
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 12px;
+            color: #555;
+        }
+        
+        .section ul {
+            margin-left: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .section li {
+            margin-bottom: 10px;
+        }
+        
+        .highlight-box {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-left: 5px solid #667eea;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 10px;
+        }
+        
+        .highlight-box strong {
+            color: #667eea;
+            font-size: 18px;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 10px;
+        }
+        
+        .info-box {
+            background: #d1ecf1;
+            border-left: 5px solid #17a2b8;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 10px;
+        }
+        
+        .step-box {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        
+        .step-number {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 35px;
+            font-weight: 900;
+            margin-right: 15px;
+            font-size: 18px;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .footer p {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        .contact-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .contact-info strong {
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>RandomFocus</h1>
+            <p>Data Deletion Request</p>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <h2>Data Deletion Information</h2>
+                <p>
+                    <strong>RandomFocus</strong> takes your privacy very seriously. 
+                    This page provides information on how to delete your data.
+                </p>
+            </div>
+            
+            <div class="section">
+                <h2>Types of Data Collected</h2>
+                
+                <h3>1. Data Stored in Local Device Storage</h3>
+                <ul>
+                    <li><strong>Timer History</strong>: Focus session records (start time, end time, session status, etc.)</li>
+                    <li><strong>Spin Usage Records</strong>: Daily spin usage count and date information</li>
+                    <li><strong>Language Settings</strong>: Selected app language preference</li>
+                    <li><strong>App Settings</strong>: In-app preferences and settings</li>
+                </ul>
+                
+                <div class="info-box">
+                    <strong>Important:</strong> All this data is stored only in your device's local storage 
+                    and is not transmitted to any server.
+                </div>
+                
+                <h3>2. Advertising-Related Data</h3>
+                <ul>
+                    <li><strong>Advertising ID</strong>: Advertising identifier collected through Google Mobile Ads</li>
+                </ul>
+                
+                <div class="info-box">
+                    <strong>Note:</strong> Advertising IDs are shared with Google Mobile Ads 
+                    and used to provide personalized advertisements.
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>How to Delete Your Data</h2>
+                
+                <div class="highlight-box">
+                    <strong>Since all user data is stored only in local device storage, 
+                    uninstalling the app will automatically delete all data.</strong>
+                </div>
+                
+                <h3>Method 1: Uninstall the App (Simplest Method)</h3>
+                
+                <div class="step-box">
+                    <span class="step-number">1</span>
+                    <strong>On Android devices:</strong>
+                    <ul style="margin-top: 10px; margin-left: 50px;">
+                        <li>Go to Settings > Apps > RandomFocus</li>
+                        <li>Tap "Uninstall" or "Remove"</li>
+                    </ul>
+                </div>
+                
+                <div class="step-box">
+                    <span class="step-number">2</span>
+                    <strong>Confirmation:</strong>
+                    <p style="margin-top: 10px; margin-left: 50px;">
+                        When you uninstall the app, the following data will be deleted:
+                    </p>
+                    <ul style="margin-top: 10px; margin-left: 50px;">
+                        <li>All timer history</li>
+                        <li>Spin usage records</li>
+                        <li>Language settings</li>
+                        <li>All app settings</li>
+                    </ul>
+                </div>
+                
+                <div class="warning-box">
+                    <strong>⚠️ Warning:</strong> Uninstalling the app will permanently delete all stored data. 
+                    Please consider backing up any important records before uninstalling.
+                </div>
+                
+                <h3>Method 2: Reset Advertising ID (Advertising Data Only)</h3>
+                
+                <p>To reset only your advertising ID, follow these steps:</p>
+                
+                <div class="step-box">
+                    <span class="step-number">1</span>
+                    <strong>On Android devices:</strong>
+                    <ul style="margin-top: 10px; margin-left: 50px;">
+                        <li>Go to Settings > Google > Ads</li>
+                        <li>Select "Reset advertising ID"</li>
+                    </ul>
+                </div>
+                
+                <div class="step-box">
+                    <span class="step-number">2</span>
+                    <strong>Or disable ad personalization:</strong>
+                    <ul style="margin-top: 10px; margin-left: 50px;">
+                        <li>Go to Settings > Google > Ads</li>
+                        <li>Disable "Ad personalization" option</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Data Retention Period</h2>
+                
+                <div class="info-box">
+                    <h3>Local Device Storage Data</h3>
+                    <ul>
+                        <li><strong>Retention Period:</strong> While the app is installed</li>
+                        <li><strong>Automatic Deletion:</strong> Immediately upon app uninstallation</li>
+                        <li><strong>Additional Retention Period:</strong> None (data is completely deleted immediately upon app uninstallation)</li>
+                    </ul>
+                </div>
+                
+                <div class="info-box">
+                    <h3>Advertising ID</h3>
+                    <ul>
+                        <li><strong>Retention Period:</strong> According to Google's Privacy Policy</li>
+                        <li><strong>Deletion Method:</strong> Reset advertising ID in device settings</li>
+                        <li><strong>Reference:</strong> Google's Privacy Policy: 
+                            <a href="https://policies.google.com/privacy" target="_blank">
+                                https://policies.google.com/privacy
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Data Deletion Confirmation</h2>
+                
+                <p>To confirm data deletion:</p>
+                <ol style="margin-left: 25px;">
+                    <li>Uninstall the app</li>
+                    <li>Reinstall the app</li>
+                    <li>Verify that all previous data has been deleted</li>
+                </ol>
+                
+                <div class="highlight-box">
+                    <strong>Verification Checklist:</strong>
+                    <ul style="margin-top: 10px;">
+                        <li>Timer history is empty</li>
+                        <li>Spin usage records are reset</li>
+                        <li>Language settings return to default</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Contact Us</h2>
+                
+                <div class="contact-info">
+                    <p>
+                        If you have any additional questions or concerns about data deletion, 
+                        please contact us at:
+                    </p>
+                    <p style="margin-top: 15px;">
+                        <strong>App Name:</strong> RandomFocus<br>
+                        <strong>Version:</strong> 1.0.0<br>
+                        <strong>Email:</strong> [Enter your email address]
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>
+                <strong>RandomFocus</strong> - Random Focus Timer<br>
+                © 2025. All rights reserved.
+            </p>
+            <p style="margin-top: 10px;">
+                <a href="privacy-policy.html" style="color: #667eea; text-decoration: none;">
+                    Privacy Policy
+                </a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

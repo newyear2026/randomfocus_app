@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RandomFocus - 데이터 삭제 요청</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            font-weight: 900;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+        
+        .header p {
+            font-size: 16px;
+            opacity: 0.95;
+        }
+        
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+        }
+        
+        .section h2 {
+            color: #667eea;
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .section h3 {
+            color: #764ba2;
+            font-size: 20px;
+            font-weight: 700;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        
+        .section p, .section li {
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 12px;
+            color: #555;
+        }
+        
+        .section ul {
+            margin-left: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .section li {
+            margin-bottom: 10px;
+        }
+        
+        .highlight-box {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-left: 5px solid #667eea;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 10px;
+        }
+        
+        .highlight-box strong {
+            color: #667eea;
+            font-size: 18px;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 10px;
+        }
+        
+        .info-box {
+            background: #d1ecf1;
+            border-left: 5px solid #17a2b8;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 10px;
+        }
+        
+        .step-box {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        
+        .step-number {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 35px;
+            font-weight: 900;
+            margin-right: 15px;
+            font-size: 18px;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .footer p {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        .contact-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .contact-info strong {
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>RandomFocus</h1>
+            <p>데이터 삭제 요청</p>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <h2>데이터 삭제 안내</h2>
+                <p>
+                    <strong>RandomFocus</strong>는 사용자의 개인정보 보호를 매우 중요하게 생각합니다. 
+                    본 페이지에서는 사용자 데이터 삭제 방법에 대해 안내합니다.
+                </p>
+            </div>
+            
+            <div class="section">
+                <h2>수집되는 데이터 유형</h2>
+                
+                <h3>1. 기기 내부 저장소에 저장되는 데이터</h3>
+                <ul>
+                    <li><strong>타이머 기록</strong>: 포커스 세션 기록 (시작 시간, 종료 시간, 세션 상태 등)</li>
+                    <li><strong>스핀 사용 기록</strong>: 일일 스핀 사용 횟수 및 날짜 정보</li>
+                    <li><strong>언어 설정</strong>: 선택한 앱 언어 설정</li>
+                    <li><strong>앱 설정</strong>: 사용자가 변경한 앱 내 설정</li>
+                </ul>
+                
+                <div class="info-box">
+                    <strong>중요:</strong> 이 데이터는 모두 사용자의 기기 내부 저장소에만 저장되며, 
+                    서버로 전송되지 않습니다.
+                </div>
+                
+                <h3>2. 광고 관련 데이터</h3>
+                <ul>
+                    <li><strong>광고 ID (Advertising ID)</strong>: Google Mobile Ads를 통해 수집되는 광고 식별자</li>
+                </ul>
+                
+                <div class="info-box">
+                    <strong>참고:</strong> 광고 ID는 Google Mobile Ads와 공유되며, 
+                    맞춤형 광고 제공을 위해 사용됩니다.
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>데이터 삭제 방법</h2>
+                
+                <div class="highlight-box">
+                    <strong>모든 사용자 데이터는 기기 내부에만 저장되므로, 
+                    앱을 삭제하면 모든 데이터가 자동으로 삭제됩니다.</strong>
+                </div>
+                
+                <h3>방법 1: 앱 삭제 (가장 간단한 방법)</h3>
+                
+                <div class="step-box">
+                    <span class="step-number">1</span>
+                    <strong>Android 기기에서:</strong>
+                    <ul style="margin-top: 10px; margin-left: 50px;">
+                        <li>설정 > 앱 > RandomFocus 선택</li>
+                        <li>"삭제" 또는 "제거" 버튼 클릭</li>
+                    </ul>
+                </div>
+                
+                <div class="step-box">
+                    <span class="step-number">2</span>
+                    <strong>확인:</strong>
+                    <p style="margin-top: 10px; margin-left: 50px;">
+                        앱 삭제 시 다음 데이터가 모두 삭제됩니다:
+                    </p>
+                    <ul style="margin-top: 10px; margin-left: 50px;">
+                        <li>모든 타이머 기록</li>
+                        <li>스핀 사용 기록</li>
+                        <li>언어 설정</li>
+                        <li>모든 앱 설정</li>
+                    </ul>
+                </div>
+                
+                <div class="warning-box">
+                    <strong>⚠️ 주의사항:</strong> 앱을 삭제하면 저장된 모든 데이터가 복구 불가능하게 삭제됩니다. 
+                    삭제하기 전에 중요한 기록이 있다면 백업을 고려하세요.
+                </div>
+                
+                <h3>방법 2: 광고 ID 재설정 (광고 관련 데이터만)</h3>
+                
+                <p>광고 ID만 재설정하려면 다음 단계를 따르세요:</p>
+                
+                <div class="step-box">
+                    <span class="step-number">1</span>
+                    <strong>Android 기기에서:</strong>
+                    <ul style="margin-top: 10px; margin-left: 50px;">
+                        <li>설정 > Google > 광고</li>
+                        <li>"광고 ID 재설정" 선택</li>
+                    </ul>
+                </div>
+                
+                <div class="step-box">
+                    <span class="step-number">2</span>
+                    <strong>또는 광고 개인 맞춤 비활성화:</strong>
+                    <ul style="margin-top: 10px; margin-left: 50px;">
+                        <li>설정 > Google > 광고</li>
+                        <li>"광고 개인 맞춤" 옵션 비활성화</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>데이터 보관 기간</h2>
+                
+                <div class="info-box">
+                    <h3>기기 내부 저장소 데이터</h3>
+                    <ul>
+                        <li><strong>보관 기간:</strong> 앱이 설치되어 있는 동안</strong></li>
+                        <li><strong>자동 삭제:</strong> 앱 삭제 시 즉시 삭제</li>
+                        <li><strong>추가 보관 기간:</strong> 없음 (앱 삭제 시 즉시 완전 삭제)</li>
+                    </ul>
+                </div>
+                
+                <div class="info-box">
+                    <h3>광고 ID</h3>
+                    <ul>
+                        <li><strong>보관 기간:</strong> Google의 개인정보 처리방침에 따름</li>
+                        <li><strong>삭제 방법:</strong> 기기 설정에서 광고 ID 재설정</li>
+                        <li><strong>참고:</strong> Google의 개인정보 처리방침: 
+                            <a href="https://policies.google.com/privacy" target="_blank">
+                                https://policies.google.com/privacy
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>데이터 삭제 확인</h2>
+                
+                <p>데이터 삭제를 확인하려면:</p>
+                <ol style="margin-left: 25px;">
+                    <li>앱을 삭제합니다</li>
+                    <li>앱을 다시 설치합니다</li>
+                    <li>이전 데이터가 모두 삭제되었는지 확인합니다</li>
+                </ol>
+                
+                <div class="highlight-box">
+                    <strong>확인 사항:</strong>
+                    <ul style="margin-top: 10px;">
+                        <li>타이머 기록이 비어있음</li>
+                        <li>스핀 사용 기록이 초기화됨</li>
+                        <li>언어 설정이 기본값으로 돌아감</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>문의사항</h2>
+                
+                <div class="contact-info">
+                    <p>
+                        데이터 삭제에 대한 추가 질문이나 문의사항이 있으시면 
+                        다음으로 연락해 주세요:
+                    </p>
+                    <p style="margin-top: 15px;">
+                        <strong>앱 이름:</strong> RandomFocus<br>
+                        <strong>버전:</strong> 1.0.0<br>
+                        <strong>이메일:</strong> [개발자 이메일 주소를 입력하세요]
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>
+                <strong>RandomFocus</strong> - 랜덤 포커스 타이머<br>
+                © 2025. All rights reserved.
+            </p>
+            <p style="margin-top: 10px;">
+                <a href="privacy-policy.html" style="color: #667eea; text-decoration: none;">
+                    개인정보 처리방침
+                </a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
