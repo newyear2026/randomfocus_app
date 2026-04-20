@@ -6,6 +6,7 @@ import 'pages/home_page.dart';
 import 'pages/splash_page.dart';
 import 'services/language_service.dart';
 import 'services/app_localizations.dart';
+import 'services/interstitial_ad_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,6 +15,7 @@ void main() async {
   if (!kIsWeb) {
     try {
       await MobileAds.instance.initialize();
+      InterstitialAdManager.instance.preload();
     } catch (e) {
       // 초기화 실패 시 조용히 처리
       debugPrint('MobileAds 초기화 실패: $e');

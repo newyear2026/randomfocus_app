@@ -1,14 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:just_audio/just_audio.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/history_service.dart';
 import '../models/timer_history.dart';
 import '../services/app_localizations.dart';
-import '../services/ad_ids.dart';
+import '../services/interstitial_ad_manager.dart';
 import '../widgets/banner_ad_widget.dart';
 
 class TimerPage extends StatefulWidget {
@@ -22,7 +20,7 @@ class TimerPage extends StatefulWidget {
 
 enum TimerState { focus, breakTime }
 
-class _TimerPageState extends State<TimerPage> {
+class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
   Timer? _timer;
   int _remainingSeconds = 0;
   TimerState _currentState = TimerState.focus;
@@ -39,94 +37,70 @@ class _TimerPageState extends State<TimerPage> {
   // 사운드 재생용 AudioPlayer
   final AudioPlayer _audioPlayer = AudioPlayer();
 
-  // 전면 광고
-  InterstitialAd? _interstitialAd;
-  bool _isInterstitialAdReady = false;
-
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _originalFocusSeconds = widget.focusMinutes; // 초 단위
     _remainingSeconds = _originalFocusSeconds;
     _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
-    // 전면 광고 로드 (웹이 아닐 때만)
-    if (!kIsWeb) {
-      _loadInterstitialAd();
-    }
+    InterstitialAdManager.instance.preload();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     _audioPlayer.dispose();
-    _interstitialAd?.dispose();
     // 페이지를 벗어날 때 세션이 저장되지 않았고 실행 중이었다면 중단으로 저장
     if (!_sessionSaved && _sessionStartTime != null && _elapsedSeconds > 0) {
       _saveSession(SessionStatus.stopped);
     }
     // 화면 잠금 해제 (페이지를 벗어날 때, 웹이 아닐 때만)
-    if (!kIsWeb) {
-      WakelockPlus.disable().catchError((error) {
-        // 에러 무시
-      });
-    }
+    _setScreenAwake(false);
     super.dispose();
   }
 
-  /// 전면 광고 로드
-  void _loadInterstitialAd() {
-    InterstitialAd.load(
-      adUnitId: AdIds.getInterstitialAdUnitId(),
-      request: const AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          _interstitialAd = ad;
-          _isInterstitialAdReady = true;
-          // 광고 닫힘 이벤트 리스너 설정
-          ad.fullScreenContentCallback = FullScreenContentCallback(
-            onAdDismissedFullScreenContent: (ad) {
-              ad.dispose();
-              _interstitialAd = null;
-              _isInterstitialAdReady = false;
-              // 광고가 닫힌 후 페이지 닫기
-              if (mounted) {
-                Navigator.pop(context);
-              }
-              // 다음 광고 미리 로드
-              _loadInterstitialAd();
-            },
-            onAdFailedToShowFullScreenContent: (ad, error) {
-              ad.dispose();
-              _interstitialAd = null;
-              _isInterstitialAdReady = false;
-              // 광고 표시 실패 시 그냥 페이지 닫기
-              if (mounted) {
-                Navigator.pop(context);
-              }
-              // 다음 광고 미리 로드
-              _loadInterstitialAd();
-            },
-          );
-        },
-        onAdFailedToLoad: (error) {
-          _interstitialAd = null;
-          _isInterstitialAdReady = false;
-          // 광고 로드 실패는 조용히 처리 (사용자 경험에 영향 없음)
-        },
-      ),
-    );
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (kIsWeb) return;
+
+    if (state == AppLifecycleState.resumed) {
+      _setScreenAwake(_isRunning);
+    }
+  }
+
+  Future<void> _setScreenAwake(bool enabled) async {
+    if (kIsWeb) return;
+
+    try {
+      if (enabled) {
+        await WakelockPlus.enable();
+      } else {
+        await WakelockPlus.disable();
+      }
+
+      final isEnabled = await WakelockPlus.enabled;
+      debugPrint('Wakelock state: requested=$enabled actual=$isEnabled');
+    } catch (error) {
+      debugPrint('Failed to update wakelock: $error');
+    }
   }
 
   /// 전면 광고 표시
   void _showInterstitialAd() {
-    if (_isInterstitialAdReady && _interstitialAd != null) {
-      _interstitialAd!.show();
-    } else {
-      // 광고가 준비되지 않았으면 바로 페이지 닫기
-      if (mounted) {
-        Navigator.pop(context);
-      }
-    }
+    InterstitialAdManager.instance.show(
+      onDismissed: () {
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      },
+      onUnavailable: () {
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      },
+    );
   }
 
   /// 사운드 재생 함수
@@ -164,11 +138,7 @@ class _TimerPageState extends State<TimerPage> {
     });
 
     // 화면이 꺼지지 않도록 설정 (웹이 아닐 때만)
-    if (!kIsWeb) {
-      WakelockPlus.enable().catchError((error) {
-        // 에러 무시 (권한이 없거나 지원하지 않는 경우)
-      });
-    }
+    _setScreenAwake(true);
 
     setState(() {
       _isRunning = true;
@@ -202,11 +172,7 @@ class _TimerPageState extends State<TimerPage> {
     }
 
     // 화면 잠금 해제 (다시 정상적으로 꺼질 수 있도록, 웹이 아닐 때만)
-    if (!kIsWeb) {
-      WakelockPlus.disable().catchError((error) {
-        // 에러 무시
-      });
-    }
+    await _setScreenAwake(false);
 
     setState(() {
       _isRunning = false;
@@ -225,11 +191,7 @@ class _TimerPageState extends State<TimerPage> {
     }
 
     // 화면 잠금 해제 (다시 정상적으로 꺼질 수 있도록, 웹이 아닐 때만)
-    if (!kIsWeb) {
-      WakelockPlus.disable().catchError((error) {
-        // 에러 무시
-      });
-    }
+    await _setScreenAwake(false);
 
     setState(() {
       _isRunning = false;
@@ -338,11 +300,7 @@ class _TimerPageState extends State<TimerPage> {
           });
     } else {
       // 휴식 시간 종료 -> 화면 잠금 해제 후 룰렛 페이지로 돌아가기 (웹이 아닐 때만)
-      if (!kIsWeb) {
-        WakelockPlus.disable().catchError((error) {
-          // 에러 무시
-        });
-      }
+      _setScreenAwake(false);
       if (mounted) {
         Navigator.pop(context);
       }

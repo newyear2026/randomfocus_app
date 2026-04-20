@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kReleaseMode;
 
 /// Google Mobile Ads 광고 단위 ID 관리
 class AdIds {
@@ -10,10 +11,9 @@ class AdIds {
   static const String iosBannerAdUnitId = 'ca-app-pub-2145694579976238/6760029240';
   static const String iosInterstitialAdUnitId = 'ca-app-pub-2145694579976238/7133889173';
   
-  // 플랫폼별 배너 광고 단위 ID 가져오기
-  // 테스트 모드: true로 설정하면 테스트 광고 ID 사용
-  // ⚠️ 출시 전 반드시 false로 변경하세요!
-  static const bool _useTestAds = false; // 출시용: false
+  // 릴리즈 빌드에서만 실제 광고를 사용하고, 그 외에는 테스트 광고를 강제한다.
+  static bool get _useTestAds => !kReleaseMode;
+  static bool get usingTestAds => _useTestAds;
   
   static String getBannerAdUnitId() {
     // 테스트 광고 사용
@@ -48,4 +48,3 @@ class AdIds {
   static const String testBannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
   static const String testInterstitialAdUnitId = 'ca-app-pub-3940256099942544/1033173712';
 }
-
