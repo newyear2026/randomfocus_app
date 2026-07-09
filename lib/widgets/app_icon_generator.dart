@@ -2,9 +2,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 /// 룰렛 휠 앱 아이콘 생성 위젯
-/// 
+///
 /// 이 위젯을 사용하여 룰렛 휠 모양의 앱 아이콘을 생성할 수 있습니다.
-/// 
+///
 /// 사용 예시:
 /// ```dart
 /// AppIconGenerator(size: 1024)
@@ -108,7 +108,7 @@ class _RouletteIconPainter extends CustomPainter {
             fontWeight: FontWeight.w900,
             shadows: [
               Shadow(
-                color: Colors.black.withOpacity(0.5),
+                color: Colors.black.withValues(alpha: 0.5),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -120,10 +120,7 @@ class _RouletteIconPainter extends CustomPainter {
       textPainter.layout();
       textPainter.paint(
         canvas,
-        Offset(
-          textX - textPainter.width / 2,
-          textY - textPainter.height / 2,
-        ),
+        Offset(textX - textPainter.width / 2, textY - textPainter.height / 2),
       );
     }
 
@@ -141,8 +138,14 @@ class _RouletteIconPainter extends CustomPainter {
     // 상단 포인터
     final pointerPath = Path()
       ..moveTo(center.dx, center.dy - radius - size.width * 0.05)
-      ..lineTo(center.dx - size.width * 0.03, center.dy - radius + size.width * 0.02)
-      ..lineTo(center.dx + size.width * 0.03, center.dy - radius + size.width * 0.02)
+      ..lineTo(
+        center.dx - size.width * 0.03,
+        center.dy - radius + size.width * 0.02,
+      )
+      ..lineTo(
+        center.dx + size.width * 0.03,
+        center.dy - radius + size.width * 0.02,
+      )
       ..close();
     paint.color = Colors.white;
     paint.style = PaintingStyle.fill;
@@ -152,5 +155,3 @@ class _RouletteIconPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-
-

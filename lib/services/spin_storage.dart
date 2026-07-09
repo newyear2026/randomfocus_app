@@ -63,7 +63,7 @@ class SpinStorage {
 
     // 스핀 사용 (1회 차감)
     usedSpins++;
-    
+
     // 최대값 제한 (안전장치)
     if (usedSpins > _maxSpinsPerDay) {
       usedSpins = _maxSpinsPerDay;
@@ -112,10 +112,8 @@ class SpinStorage {
     final prefs = await SharedPreferences.getInstance();
     final todayStr = _getTodayDateString();
     final savedDateStr = prefs.getString(_keySpinDate);
-    
+
     if (savedDateStr == null) return true;
     return !_isSameDay(savedDateStr, todayStr);
   }
 }
-
-

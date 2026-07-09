@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class LanguageService {
   static const String _keyLanguage = 'selected_language';
-  
+
   // 지원하는 언어 목록
   static const List<Locale> supportedLocales = [
     Locale('en', ''), // English
@@ -38,25 +38,8 @@ class LanguageService {
 
   /// 언어 코드가 지원되는지 확인
   static bool isSupported(String languageCode) {
-    return supportedLocales.any((locale) => locale.languageCode == languageCode);
+    return supportedLocales.any(
+      (locale) => locale.languageCode == languageCode,
+    );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

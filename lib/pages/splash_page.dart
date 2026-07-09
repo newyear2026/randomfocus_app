@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_text_styles.dart';
 import '../widgets/app_icon_generator.dart';
 
 class SplashPage extends StatefulWidget {
@@ -87,8 +88,8 @@ class _SplashPageState extends State<SplashPage>
             end: Alignment.bottomRight,
             colors: [
               const Color(0xFF6366F1), // 보라색 (룰렛 휠 배경색과 일치)
-              const Color(0xFF6366F1).withOpacity(0.9),
-              const Color(0xFF6366F1).withOpacity(0.8),
+              const Color(0xFF6366F1).withValues(alpha: 0.9),
+              const Color(0xFF6366F1).withValues(alpha: 0.8),
             ],
           ),
         ),
@@ -108,13 +109,13 @@ class _SplashPageState extends State<SplashPage>
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
+                          color: Colors.black.withValues(alpha: 0.3),
                           blurRadius: 30,
                           spreadRadius: 5,
                           offset: const Offset(0, 15),
                         ),
                         BoxShadow(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           blurRadius: 40,
                           spreadRadius: 8,
                           offset: const Offset(0, 20),
@@ -142,18 +143,18 @@ class _SplashPageState extends State<SplashPage>
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Colors.white.withOpacity(0.2),
-                          Colors.white.withOpacity(0.15),
+                          Colors.white.withValues(alpha: 0.2),
+                          Colors.white.withValues(alpha: 0.15),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.3),
+                        color: Colors.white.withValues(alpha: 0.3),
                         width: 2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
+                          color: Colors.black.withValues(alpha: 0.2),
                           blurRadius: 15,
                           offset: const Offset(0, 5),
                         ),
@@ -165,26 +166,25 @@ class _SplashPageState extends State<SplashPage>
                         end: Alignment.bottomRight,
                         colors: [
                           Colors.white,
-                          Colors.white.withOpacity(0.95),
-                          Colors.white.withOpacity(0.9),
+                          Colors.white.withValues(alpha: 0.95),
+                          Colors.white.withValues(alpha: 0.9),
                         ],
                       ).createShader(bounds),
                       child: Text(
                         'RandomFocus',
-                        style: TextStyle(
+                        style: AppTextStyles.appBarTitle.copyWith(
                           fontSize: 38,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
                           letterSpacing: 3.5,
-                          height: 1.2,
                           shadows: [
                             Shadow(
-                              color: Colors.black.withOpacity(0.5),
+                              color: Colors.black.withValues(alpha: 0.5),
                               blurRadius: 15,
                               offset: const Offset(0, 6),
                             ),
                             Shadow(
-                              color: const Color(0xFF6366F1).withOpacity(0.4),
+                              color: const Color(
+                                0xFF6366F1,
+                              ).withValues(alpha: 0.4),
                               blurRadius: 25,
                               offset: const Offset(0, 10),
                             ),
@@ -205,17 +205,17 @@ class _SplashPageState extends State<SplashPage>
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Colors.white.withOpacity(0.25),
-                          Colors.white.withOpacity(0.15),
+                          Colors.white.withValues(alpha: 0.25),
+                          Colors.white.withValues(alpha: 0.15),
                         ],
                       ),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.4),
+                        color: Colors.white.withValues(alpha: 0.4),
                         width: 2.5,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
+                          color: Colors.black.withValues(alpha: 0.2),
                           blurRadius: 10,
                           offset: const Offset(0, 5),
                         ),
@@ -226,9 +226,9 @@ class _SplashPageState extends State<SplashPage>
                       child: CircularProgressIndicator(
                         strokeWidth: 3.5,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          Colors.white.withOpacity(0.95),
+                          Colors.white.withValues(alpha: 0.95),
                         ),
-                        backgroundColor: Colors.white.withOpacity(0.2),
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
                       ),
                     ),
                   ),

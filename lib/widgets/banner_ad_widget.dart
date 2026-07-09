@@ -48,9 +48,8 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
       'BannerAd load requested: unitId=$adUnitId width=$width retry=$_retryCount testAds=${AdIds.usingTestAds}',
     );
 
-    final adSize = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
-      width,
-    );
+    final adSize =
+        await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width);
 
     if (!mounted) {
       _isLoading = false;
@@ -146,7 +145,8 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
               ? '광고를 불러올 수 없습니다'
               : '광고 로딩 중...';
           final fallbackHeight =
-              _bannerAd?.size.height.toDouble() ?? AdSize.banner.height.toDouble();
+              _bannerAd?.size.height.toDouble() ??
+              AdSize.banner.height.toDouble();
 
           return Container(
             alignment: Alignment.center,

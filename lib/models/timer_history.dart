@@ -41,6 +41,20 @@ class TimerHistory {
     };
   }
 
+  /// selectedTime을 분 단위로 정규화한다.
+  ///
+  /// 과거 버전에서는 selectedTime에 초 단위 값(예: 25분 -> 1500)이
+  /// 잘못 저장되었다. 분 옵션의 최대값은 90인 반면 초 값은 최소 1500이므로
+  /// 300 이상이면 초 단위로 잘못 저장된 데이터로 보고 분으로 변환한다.
+  static const int _secondsThreshold = 300;
+
+  static int normalizeSelectedMinutes(int rawSelectedTime) {
+    if (rawSelectedTime >= _secondsThreshold) {
+      return rawSelectedTime ~/ 60;
+    }
+    return rawSelectedTime;
+  }
+
   // JSON에서 생성
   factory TimerHistory.fromJson(Map<String, dynamic> json) {
     // 하위 호환성: 기존 형식 지원
@@ -52,12 +66,13 @@ class TimerHistory {
       );
     }
 
+    final selectedMinutes = normalizeSelectedMinutes(json['selectedTime'] as int);
+
     return TimerHistory(
       sessionId: json['sessionId'] as String,
       dateTime: DateTime.parse(json['dateTime'] as String),
-      selectedTime: json['selectedTime'] as int,
-      actualTime:
-          json['actualTime'] as int? ?? (json['selectedTime'] as int) * 60,
+      selectedTime: selectedMinutes,
+      actualTime: json['actualTime'] as int? ?? selectedMinutes * 60,
       status: SessionStatus.values.firstWhere(
         (e) => e.name == json['status'],
         orElse: () => SessionStatus.completed,

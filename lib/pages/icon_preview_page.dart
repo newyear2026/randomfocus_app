@@ -4,6 +4,8 @@ import 'package:flutter/rendering.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
+import '../services/app_localizations.dart';
+import '../widgets/app_feedback.dart';
 import '../widgets/app_icon_generator.dart';
 
 // 웹이 아닐 때만 dart:io와 path_provider 사용
@@ -90,28 +92,22 @@ class _IconPreviewPageState extends State<IconPreviewPage> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-              '✅ 아이콘이 저장되었습니다!\n'
-              '공유 메뉴에서 저장 위치를 선택하세요.\n'
-              '그 후 assets/images/app_icon.png로 복사하고\n'
-              'flutter pub run flutter_launcher_icons를 실행하세요.',
-            ),
-            duration: const Duration(seconds: 5),
-            action: SnackBarAction(label: '확인', onPressed: () {}),
-          ),
+        showAppSnackBar(
+          context,
+          message:
+              '아이콘이 저장되었습니다.\n공유 메뉴에서 저장 위치를 선택한 뒤 launcher icon 생성을 진행하세요.',
+          duration: const Duration(seconds: 5),
+          variant: AppSnackBarVariant.success,
+          action: AppSnackBarAction(label: '확인', onPressed: () {}),
         );
       }
     } catch (e) {
       // 아이콘 저장 실패 시 에러 처리
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ 저장 실패: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
+        showAppSnackBar(
+          context,
+          message: '저장 실패: $e',
+          variant: AppSnackBarVariant.error,
         );
       }
     } finally {
@@ -125,6 +121,8 @@ class _IconPreviewPageState extends State<IconPreviewPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('앱 아이콘 미리보기'),
@@ -139,10 +137,14 @@ class _IconPreviewPageState extends State<IconPreviewPage> {
               ),
             )
           else
-            IconButton(
-              icon: const Icon(Icons.save),
-              onPressed: _saveIcon,
-              tooltip: '아이콘 저장 및 공유',
+            Semantics(
+              button: true,
+              label: l10n?.saveAppIcon ?? 'Save app icon',
+              child: IconButton(
+                icon: const Icon(Icons.save),
+                onPressed: _saveIcon,
+                tooltip: l10n?.saveAppIcon ?? 'Save app icon',
+              ),
             ),
         ],
       ),

@@ -1,16 +1,38 @@
-# my_first_app
+# RandomFocus
 
-A new Flutter project.
+RandomFocus is a Flutter focus-timer app built around a roulette-style time picker, timer sessions, history tracking, ads, and a progressively systematized design/UI/UX layer.
 
-## Getting Started
+## Documentation Index
 
-This project is a starting point for a Flutter application.
+### Product / Release
 
-A few resources to get you started if this is your first Flutter project:
+- [PROJECT_RULES.md](PROJECT_RULES.md)
+- [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)
+- [PLAY_CONSOLE_SETUP.md](PLAY_CONSOLE_SETUP.md)
+- [GOOGLE_PLAY_DESCRIPTION.md](GOOGLE_PLAY_DESCRIPTION.md)
+- [PRIVACY_POLICY.md](PRIVACY_POLICY.md)
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Design System
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- [DESIGN_TOKENS.md](DESIGN_TOKENS.md)
+- [COMPONENT_USAGE_RULES.md](COMPONENT_USAGE_RULES.md)
+- [RESPONSIVE_GUIDE.md](RESPONSIVE_GUIDE.md)
+- [VISUAL_REGRESSION_GUIDE.md](VISUAL_REGRESSION_GUIDE.md)
+
+### UX / Writing / Accessibility
+
+- [UX_GUIDE.md](UX_GUIDE.md)
+- [UI_WRITING_GUIDE.md](UI_WRITING_GUIDE.md)
+- [ACCESSIBILITY_GUIDE.md](ACCESSIBILITY_GUIDE.md)
+- [PR_DESIGN_CHECKLIST.md](PR_DESIGN_CHECKLIST.md)
+
+### Testing / Workflow
+
+- [TEST_ARTIFACT_POLICY.md](TEST_ARTIFACT_POLICY.md)
+
+## Local Verification
+
+Run:
+
+- `flutter analyze`
+- `flutter test`

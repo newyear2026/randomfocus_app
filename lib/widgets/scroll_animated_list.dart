@@ -35,26 +35,16 @@ class _ScrollAnimatedListItemState extends State<ScrollAnimatedListItem>
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.3),
       end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOutCubic,
-      ),
-    );
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOut,
-      ),
-    );
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     // 스크롤 리스너 추가
     widget.scrollController.addListener(_onScroll);
-    
+
     // 초기 로드 시 첫 번째 항목은 즉시 애니메이션
     if (widget.index == 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -93,11 +83,7 @@ class _ScrollAnimatedListItemState extends State<ScrollAnimatedListItem>
   Widget build(BuildContext context) {
     return SlideTransition(
       position: _slideAnimation,
-      child: FadeTransition(
-        opacity: _fadeAnimation,
-        child: widget.child,
-      ),
+      child: FadeTransition(opacity: _fadeAnimation, child: widget.child),
     );
   }
 }
-

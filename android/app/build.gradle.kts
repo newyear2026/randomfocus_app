@@ -46,16 +46,18 @@ android {
                 keyPassword = keystoreProperties["keyPassword"] as String
                 storeFile = file("${rootProject.projectDir}/app/${keystoreProperties["storeFile"] as String}")
                 storePassword = keystoreProperties["storePassword"] as String
-            } else {
-                throw GradleException("key.properties 파일을 찾을 수 없습니다. Release 빌드를 위해 키스토어 설정이 필요합니다.")
             }
         }
     }
 
     buildTypes {
         release {
-            // 키스토어를 사용한 서명 설정 (필수)
-            signingConfig = signingConfigs.getByName("release")
+            // 로컬 디버깅 환경에서는 key.properties 없이도 빌드되도록 debug 키를 fallback으로 사용.
+            signingConfig = if (keystorePropertiesFile.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             isMinifyEnabled = false
             isShrinkResources = false
         }

@@ -29,10 +29,10 @@ class AppLocalizations {
       'seconds': 'seconds',
 
       // History Page
-      'noHistoryYet': 'No History Yet',
-      'completeSessionToSee': 'Complete a focus session to see it here',
-      'noSessionsOnThisDay': 'No sessions on this day',
-      'selectAnotherDate': 'Select another date to view sessions',
+      'noHistoryYet': 'No history yet',
+      'completeSessionToSee': 'Complete a focus session to view it here.',
+      'noSessionsOnThisDay': 'No sessions for this day',
+      'selectAnotherDate': 'Choose another date to view sessions.',
       'sessions': 'Sessions',
       'monthlySessions': 'Monthly',
       'dailySessions': 'Today',
@@ -81,6 +81,22 @@ class AppLocalizations {
       'appVersion': 'Version 1.0.0',
       'appDescription':
           'An app to help you maintain focus with random timer sessions.',
+      'languageUpdated': 'Language updated.',
+      'selectedOption': 'Selected',
+      'tapToSelect': 'Tap to choose',
+      'privacyPolicySheetSummary': 'Review the policy link.',
+      'privacyPolicySheetBody':
+          'Review the policy link before opening it in your browser.',
+      'policyUrlLabel': 'Policy URL',
+      'openInBrowser': 'Open in browser',
+      'openWheelTab': 'Open wheel tab',
+      'openHistoryTab': 'Open history tab',
+      'openSettingsTab': 'Open settings tab',
+      'closeTimerPage': 'Close timer page',
+      'resetTimer': 'Reset timer',
+      'spinWheel': 'Spin wheel',
+      'saveAppIcon': 'Save app icon',
+      'refreshHistory': 'Refresh history',
 
       // Common
       'delete': 'Delete',
@@ -102,7 +118,7 @@ class AppLocalizations {
       'focusWithRandomTimer': 'Focus with Random Timer',
       'privacyPolicy': 'Privacy Policy',
       'viewPrivacyPolicy': 'View our privacy policy',
-      'couldNotOpenUrl': 'Could not open URL',
+      'couldNotOpenUrl': 'Could not open the privacy policy.',
     },
     'es': {
       // Navigation
@@ -120,10 +136,10 @@ class AppLocalizations {
       'seconds': 'segundos',
 
       // History Page
-      'noHistoryYet': 'Sin Historial Aún',
-      'completeSessionToSee': 'Completa una sesión de enfoque para verla aquí',
-      'noSessionsOnThisDay': 'No hay sesiones en este día',
-      'selectAnotherDate': 'Selecciona otra fecha para ver sesiones',
+      'noHistoryYet': 'Aún no hay historial',
+      'completeSessionToSee': 'Completa una sesión de enfoque para verla aquí.',
+      'noSessionsOnThisDay': 'No hay sesiones para este día',
+      'selectAnotherDate': 'Elige otra fecha para ver las sesiones.',
       'sessions': 'Sesiones',
       'monthlySessions': 'Mensual',
       'dailySessions': 'Hoy',
@@ -173,6 +189,22 @@ class AppLocalizations {
       'appVersion': 'Versión 1.0.0',
       'appDescription':
           'Una aplicación para ayudarte a mantener el enfoque con sesiones de temporizador aleatorias.',
+      'languageUpdated': 'Idioma actualizado.',
+      'selectedOption': 'Seleccionada',
+      'tapToSelect': 'Toca para elegir',
+      'privacyPolicySheetSummary': 'Revisa el enlace de la política.',
+      'privacyPolicySheetBody':
+          'Revisa el enlace de la política antes de abrirlo en tu navegador.',
+      'policyUrlLabel': 'URL de la política',
+      'openInBrowser': 'Abrir en el navegador',
+      'openWheelTab': 'Abrir pestaña de rueda',
+      'openHistoryTab': 'Abrir pestaña de historial',
+      'openSettingsTab': 'Abrir pestaña de configuración',
+      'closeTimerPage': 'Cerrar página del temporizador',
+      'resetTimer': 'Reiniciar temporizador',
+      'spinWheel': 'Girar la rueda',
+      'saveAppIcon': 'Guardar icono de la aplicación',
+      'refreshHistory': 'Actualizar historial',
 
       // Common
       'delete': 'Eliminar',
@@ -194,7 +226,7 @@ class AppLocalizations {
       'focusWithRandomTimer': 'Enfócate con Temporizador Aleatorio',
       'privacyPolicy': 'Política de Privacidad',
       'viewPrivacyPolicy': 'Ver nuestra política de privacidad',
-      'couldNotOpenUrl': 'No se pudo abrir la URL',
+      'couldNotOpenUrl': 'No se pudo abrir la política de privacidad.',
     },
     'zh': {
       // Navigation
@@ -213,9 +245,9 @@ class AppLocalizations {
 
       // History Page
       'noHistoryYet': '暂无历史记录',
-      'completeSessionToSee': '完成专注会话后即可查看',
-      'noSessionsOnThisDay': '这一天没有会话',
-      'selectAnotherDate': '选择其他日期查看会话',
+      'completeSessionToSee': '完成一次专注会话后即可在这里查看。',
+      'noSessionsOnThisDay': '当天没有会话',
+      'selectAnotherDate': '选择其他日期查看会话。',
       'sessions': '会话',
       'monthlySessions': '本月',
       'dailySessions': '今日',
@@ -263,6 +295,21 @@ class AppLocalizations {
       'appTitle': 'RandomFocus',
       'appVersion': '版本 1.0.0',
       'appDescription': '一款通过随机计时器会话帮助您保持专注的应用。',
+      'languageUpdated': '语言已更新。',
+      'selectedOption': '已选择',
+      'tapToSelect': '点按以选择',
+      'privacyPolicySheetSummary': '查看隐私政策链接。',
+      'privacyPolicySheetBody': '在浏览器中打开前，请先查看隐私政策链接。',
+      'policyUrlLabel': '政策链接',
+      'openInBrowser': '在浏览器中打开',
+      'openWheelTab': '打开转盘标签',
+      'openHistoryTab': '打开历史标签',
+      'openSettingsTab': '打开设置标签',
+      'closeTimerPage': '关闭计时器页面',
+      'resetTimer': '重置计时器',
+      'spinWheel': '旋转转盘',
+      'saveAppIcon': '保存应用图标',
+      'refreshHistory': '刷新历史记录',
 
       // Common
       'delete': '删除',
@@ -283,7 +330,7 @@ class AppLocalizations {
       'focusWithRandomTimer': '使用随机计时器专注',
       'privacyPolicy': '隐私政策',
       'viewPrivacyPolicy': '查看我们的隐私政策',
-      'couldNotOpenUrl': '无法打开URL',
+      'couldNotOpenUrl': '无法打开隐私政策。',
     },
   };
 
@@ -354,6 +401,22 @@ class AppLocalizations {
   String get appTitle => translate('appTitle');
   String get appVersion => translate('appVersion');
   String get appDescription => translate('appDescription');
+  String get languageUpdated => translate('languageUpdated');
+  String get selectedOption => translate('selectedOption');
+  String get tapToSelect => translate('tapToSelect');
+  String get privacyPolicySheetSummary =>
+      translate('privacyPolicySheetSummary');
+  String get privacyPolicySheetBody => translate('privacyPolicySheetBody');
+  String get policyUrlLabel => translate('policyUrlLabel');
+  String get openInBrowser => translate('openInBrowser');
+  String get openWheelTab => translate('openWheelTab');
+  String get openHistoryTab => translate('openHistoryTab');
+  String get openSettingsTab => translate('openSettingsTab');
+  String get closeTimerPage => translate('closeTimerPage');
+  String get resetTimer => translate('resetTimer');
+  String get spinWheel => translate('spinWheel');
+  String get saveAppIcon => translate('saveAppIcon');
+  String get refreshHistory => translate('refreshHistory');
   String get delete => translate('delete');
   String get deleteHistory => translate('deleteHistory');
   String get deleteConfirm => translate('deleteConfirm');

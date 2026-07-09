@@ -7,7 +7,11 @@ import '../services/history_service.dart';
 import '../models/timer_history.dart';
 import '../services/app_localizations.dart';
 import '../services/interstitial_ad_manager.dart';
+import '../widgets/app_dialogs.dart';
+import '../widgets/app_screen.dart';
 import '../widgets/banner_ad_widget.dart';
+import '../widgets/timer_header_content.dart';
+import '../widgets/timer_status_panel.dart';
 
 class TimerPage extends StatefulWidget {
   final int focusMinutes;
@@ -211,26 +215,17 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
   /// 뒤로 가기 확인 다이얼로그
   Future<void> _showBackDialog() async {
     final l10n = AppLocalizations.of(context);
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n?.goBack ?? '뒤로 가시겠습니까?'),
-        content: Text(l10n?.goBackConfirm ?? '타이머 페이지를 나가시겠습니까?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n?.cancel ?? '취소'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.deepPurple),
-            child: Text(l10n?.goBackButton ?? '뒤로 가기'),
-          ),
-        ],
-      ),
+      title: l10n?.goBack ?? '뒤로 가시겠습니까?',
+      content: l10n?.goBackConfirm ?? '타이머 페이지를 나가시겠습니까?',
+      cancelLabel: l10n?.cancel ?? '취소',
+      confirmLabel: l10n?.goBackButton ?? '뒤로 가기',
+      variant: AppDialogVariant.warning,
+      confirmColor: Colors.deepPurple,
     );
 
-    if (confirmed == true && mounted) {
+    if (confirmed && mounted) {
       // 전면 광고 표시 (웹이 아닐 때만)
       if (!kIsWeb) {
         _showInterstitialAd();
@@ -248,7 +243,8 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     final history = TimerHistory(
       sessionId: _sessionId!,
       dateTime: DateTime.now(),
-      selectedTime: widget.focusMinutes,
+      // widget.focusMinutes는 초 단위로 전달되므로 분으로 정규화하여 저장
+      selectedTime: widget.focusMinutes ~/ 60,
       actualTime: _elapsedSeconds,
       status: status,
       notes: null,
@@ -338,453 +334,68 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
         : Colors.blue.shade600;
   }
 
-  double _getProgress() {
-    if (_currentState == TimerState.focus) {
-      return (_originalFocusSeconds - _remainingSeconds) /
-          _originalFocusSeconds;
-    } else {
-      return (_originalBreakSeconds - _remainingSeconds) /
-          _originalBreakSeconds;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final stateColor = _getStateColor();
+    final l10n = AppLocalizations.of(context);
 
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.deepPurple.shade50,
-              Colors.purple.shade50,
-              Colors.white,
-            ],
-            stops: const [0.0, 0.5, 1.0],
-          ),
-        ),
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            automaticallyImplyLeading: !_isRunning,
-            leading: _isRunning
-                ? null
-                : IconButton(
-                    icon: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.deepPurple.shade400,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 24,
-                      ),
+    return AppScreen(
+      automaticallyImplyLeading: !_isRunning,
+      leading: _isRunning
+          ? null
+          : Semantics(
+              button: true,
+              label: l10n?.closeTimerPage ?? 'Close timer page',
+              child: Tooltip(
+                message: l10n?.closeTimerPage ?? 'Close timer page',
+                child: IconButton(
+                  icon: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.deepPurple.shade400,
+                      shape: BoxShape.circle,
                     ),
-                    onPressed: _showBackDialog,
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 24,
+                    ),
                   ),
-            flexibleSpace: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.deepPurple.shade700,
-                    Colors.deepPurple.shade500,
-                    Colors.purple.shade400,
-                  ],
+                  onPressed: _showBackDialog,
                 ),
               ),
             ),
-            title: Column(
-              children: [
-                Text(
-                  _getStateLabel(context),
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: 1.0,
-                    height: 1.2,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black26,
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${widget.focusMinutes} ${AppLocalizations.of(context)?.seconds ?? 'seconds'}',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.white.withOpacity(0.95),
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.3,
-                    height: 1.3,
-                  ),
-                ),
-              ],
-            ),
-            centerTitle: true,
-          ),
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // 큰 원형 타이머
-                  Expanded(
-                    child: Center(
-                      child: SizedBox(
-                        width: 320,
-                        height: 320,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // 외곽 진행 링 (두꺼운 링) - 그라데이션 효과를 위한 컨테이너
-                            Container(
-                              width: 320,
-                              height: 320,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: SweepGradient(
-                                  startAngle: 0,
-                                  endAngle: 3.14159 * 2,
-                                  colors: [
-                                    stateColor.withOpacity(0.2),
-                                    stateColor.withOpacity(0.1),
-                                    stateColor.withOpacity(0.2),
-                                  ],
-                                ),
-                              ),
-                              child: SizedBox(
-                                width: 320,
-                                height: 320,
-                                child: CircularProgressIndicator(
-                                  value: _getProgress(),
-                                  strokeWidth: 22,
-                                  backgroundColor: stateColor.withOpacity(0.12),
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    stateColor,
-                                  ),
-                                  strokeCap: StrokeCap.round,
-                                ),
-                              ),
-                            ),
-                            // 내부 원형 배경
-                            Container(
-                              width: 280,
-                              height: 280,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    Colors.white,
-                                    Colors.grey.shade50,
-                                    Colors.white,
-                                  ],
-                                  stops: const [0.0, 0.5, 1.0],
-                                ),
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: stateColor.withOpacity(0.15),
-                                    blurRadius: 25,
-                                    spreadRadius: 3,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 15,
-                                    spreadRadius: 1,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  // 상태 라벨
-                                  Text(
-                                    _getStateLabel(context),
-                                    style: TextStyle(
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.grey.shade900,
-                                      letterSpacing: 1.2,
-                                      height: 1.2,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  // 시간 표시
-                                  Text(
-                                    _formatTime(_remainingSeconds),
-                                    style: TextStyle(
-                                      fontSize: 72,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.grey.shade900,
-                                      fontFeatures: [
-                                        const FontFeature.tabularFigures(),
-                                      ],
-                                      letterSpacing: -1,
-                                      height: 1.1,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black.withOpacity(0.1),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  // 상태 텍스트
-                                  Text(
-                                    _getStatusText(context),
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      color: Colors.grey.shade700,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.5,
-                                      height: 1.3,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 60),
-                  // Stop 버튼
-                  if (_isRunning)
-                    Container(
-                      width: double.infinity,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [stateColor, stateColor.withOpacity(0.8)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(30),
-                        boxShadow: [
-                          BoxShadow(
-                            color: stateColor.withOpacity(0.5),
-                            blurRadius: 20,
-                            spreadRadius: 0,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: ElevatedButton(
-                        onPressed: _stopTimer,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: Text(
-                          AppLocalizations.of(context)?.stop ?? 'Stop',
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.5,
-                            height: 1.2,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black38,
-                                blurRadius: 6,
-                                offset: Offset(0, 3),
-                              ),
-                              Shadow(
-                                color: Colors.black12,
-                                blurRadius: 2,
-                                offset: Offset(0, 1),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    )
-                  else
-                    Row(
-                      children: [
-                        // Start/Pause 버튼
-                        Expanded(
-                          child: Container(
-                            height: 60,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  stateColor,
-                                  stateColor.withOpacity(0.8),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(30),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: stateColor.withOpacity(0.5),
-                                  blurRadius: 20,
-                                  spreadRadius: 0,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: ElevatedButton.icon(
-                              onPressed: _startTimer,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                shadowColor: Colors.transparent,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                              ),
-                              icon: SizedBox(
-                                width: 40,
-                                height: 40,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [
-                                        Colors.white.withOpacity(0.3),
-                                        Colors.white.withOpacity(0.2),
-                                      ],
-                                    ),
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.white.withOpacity(0.3),
-                                        blurRadius: 8,
-                                        spreadRadius: 1,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Center(
-                                    child: Icon(
-                                      Icons.play_arrow,
-                                      size: 24,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              label: Text(
-                                AppLocalizations.of(context)?.start ?? 'Start',
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.5,
-                                  height: 1.2,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.black38,
-                                      blurRadius: 6,
-                                      offset: Offset(0, 3),
-                                    ),
-                                    Shadow(
-                                      color: Colors.black12,
-                                      blurRadius: 2,
-                                      offset: Offset(0, 1),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        // Reset 버튼
-                        Container(
-                          height: 60,
-                          width: 60,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [Colors.white, Colors.grey.shade50],
-                            ),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.4),
-                                blurRadius: 15,
-                                spreadRadius: 0,
-                                offset: const Offset(0, 5),
-                              ),
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 8,
-                                spreadRadius: 0,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: _resetTimer,
-                              borderRadius: BorderRadius.circular(30),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      Colors.grey.shade100,
-                                      Colors.white,
-                                    ],
-                                  ),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Center(
-                                  child: Icon(
-                                    Icons.refresh,
-                                    size: 28,
-                                    color: Colors.grey.shade800,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  const SizedBox(height: 20),
-                  // 배너 광고
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8.0),
-                    child: BannerAdWidget(),
-                  ),
-                  const SizedBox(height: 20),
-                ],
-              ),
+      title: TimerHeaderContent(
+        title: _getStateLabel(context),
+        subtitle: '${widget.focusMinutes} ${l10n?.seconds ?? 'seconds'}',
+      ),
+      bodyPadding: const EdgeInsets.symmetric(horizontal: 24.0),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Expanded(
+            child: TimerStatusPanel(
+              stateColor: stateColor,
+              stateLabel: _getStateLabel(context),
+              timeLabel: _formatTime(_remainingSeconds),
+              statusLabel: _getStatusText(context),
+              isRunning: _isRunning,
+              startLabel: l10n?.start ?? 'Start',
+              stopLabel: l10n?.stop ?? 'Stop',
+              resetLabel: l10n?.resetTimer ?? 'Reset timer',
+              onStart: _startTimer,
+              onStop: _stopTimer,
+              onReset: _resetTimer,
             ),
           ),
-        ),
+          const SizedBox(height: 20),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.0),
+            child: BannerAdWidget(),
+          ),
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }
