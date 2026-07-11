@@ -81,18 +81,22 @@ class RouletteShell extends StatelessWidget {
                         onPressed: enabled ? onSpinPressed : null,
                         label: spinLabel,
                         textStyle: AppTextStyles.largeButtonLabel,
-                        leading: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.18),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Semantics(
-                            label: spinSemanticsLabel,
-                            child: const Icon(
-                              Icons.autorenew,
-                              size: 32,
-                              color: Colors.white,
+                        leading: SizedBox.square(
+                          dimension: 48,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.18),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Semantics(
+                                label: spinSemanticsLabel,
+                                child: const Icon(
+                                  Icons.autorenew,
+                                  size: 28,
+                                  color: Colors.white,
+                                ),
+                              ),
                             ),
                           ),
                         ),
