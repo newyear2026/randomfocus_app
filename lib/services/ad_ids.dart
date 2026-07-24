@@ -5,9 +5,9 @@ import 'package:flutter/foundation.dart' show kReleaseMode;
 class AdIds {
   // Android 광고 단위 ID
   static const String androidBannerAdUnitId =
-      'ca-app-pub-2145694579976238/3953192061';
+      'ca-app-pub-2706404530136726/4088847414';
   static const String androidInterstitialAdUnitId =
-      'ca-app-pub-2145694579976238/8662593263';
+      'ca-app-pub-2706404530136726/5038846864';
 
   // iOS 광고 단위 ID
   static const String iosBannerAdUnitId =
