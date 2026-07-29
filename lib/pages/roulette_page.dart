@@ -61,18 +61,30 @@ class _RoulettePageState extends State<RoulettePage> {
 
     if (!mounted) return;
 
-    // 팝업 표시
-    await _showResultDialog(selectedSeconds);
+    // 결과 창이 닫힌 뒤에만 회전 상태를 정리한다. Spin again은 이 처리
+    // 이후에 시작해야 이전 회전의 정리 작업이 새 회전 결과를 지우지 않는다.
+    final result = await _showResultDialog(selectedSeconds);
 
-    // 다음 스핀을 위해 초기화
+    if (!mounted) return;
+
     setState(() {
       _pendingIndex = null;
     });
+
+    if (result == 'spin_again') {
+      _onSpinPressed();
+    } else if (result == 'start_timer' || result == null) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => TimerPage(focusMinutes: selectedSeconds),
+        ),
+      );
+    }
   }
 
-  Future<void> _showResultDialog(int selectedSeconds) async {
+  Future<String?> _showResultDialog(int selectedSeconds) {
     final selectedMinutes = selectedSeconds ~/ 60; // 분 단위로 변환
-    final result = await showAppBottomSheet<String>(
+    return showAppBottomSheet<String>(
       context: context,
       title: AppLocalizations.of(context)?.translate('result') ?? 'Result',
       variant: AppDialogVariant.info,
@@ -95,22 +107,6 @@ class _RoulettePageState extends State<RoulettePage> {
         ],
       ),
     );
-
-    if (result == 'spin_again') {
-      // 다시 스핀하기
-      setState(() {
-        _pendingIndex = null;
-      });
-      _onSpinPressed();
-    } else if (result == 'start_timer' || result == null) {
-      // 타이머 시작 (초 단위로 전달)
-      if (!mounted) return;
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => TimerPage(focusMinutes: selectedSeconds), // 초 단위로 전달
-        ),
-      );
-    }
   }
 
   @override
@@ -124,7 +120,7 @@ class _RoulettePageState extends State<RoulettePage> {
       body: LayoutBuilder(
               builder: (context, constraints) {
                 return RouletteShell(
-                  enabled: true,
+                  enabled: _pendingIndex == null,
                   onSpinPressed: _onSpinPressed,
                   spinLabel: l10n?.spin ?? 'Spin',
                   spinSemanticsLabel: l10n?.spinWheel ?? 'Spin wheel',
