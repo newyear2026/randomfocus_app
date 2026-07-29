@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/ad_ids.dart';
+import '../services/banner_ad_retry_policy.dart';
 
 /// 배너 광고 위젯
 class BannerAdWidget extends StatefulWidget {
@@ -15,9 +18,10 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   BannerAd? _bannerAd;
   bool _isAdLoaded = false;
   bool _isLoading = false;
-  int _retryCount = 0;
   int _lastRequestedWidth = 0;
-  static const int _maxRetries = 5;
+  bool _hasRequestedForCurrentWidth = false;
+  Timer? _retryTimer;
+  final _retryPolicy = BannerAdRetryPolicy();
 
   @override
   void initState() {
@@ -26,12 +30,19 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   void _ensureBannerLoaded(int width) {
     if (!mounted || kIsWeb || width <= 0) return;
-    if (_isLoading) return;
-    if (_isAdLoaded && _bannerAd != null && _lastRequestedWidth == width) {
+    if (_lastRequestedWidth != width) {
+      _retryTimer?.cancel();
+      _retryTimer = null;
+      _retryPolicy.reset();
+      _lastRequestedWidth = width;
+      _hasRequestedForCurrentWidth = false;
+    }
+
+    if (_isLoading || _hasRequestedForCurrentWidth) {
       return;
     }
 
-    _lastRequestedWidth = width;
+    _hasRequestedForCurrentWidth = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _loadBannerAd(width);
@@ -45,7 +56,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
     final adUnitId = AdIds.getBannerAdUnitId();
     _isLoading = true;
     debugPrint(
-      'BannerAd load requested: unitId=$adUnitId width=$width retry=$_retryCount testAds=${AdIds.usingTestAds}',
+      'BannerAd load requested: unitId=$adUnitId width=$width retry=${_retryPolicy.retryCount} testAds=${AdIds.usingTestAds}',
     );
 
     final adSize =
@@ -78,8 +89,10 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
           if (mounted) {
             setState(() {
               _isAdLoaded = true;
-              _retryCount = 0; // 성공 시 재시도 카운트 리셋
             });
+            _retryTimer?.cancel();
+            _retryTimer = null;
+            _retryPolicy.reset();
           }
         },
         onAdFailedToLoad: (ad, error) {
@@ -109,17 +122,18 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   }
 
   void _scheduleRetry() {
-    if (_retryCount >= _maxRetries) {
+    final retryDelay = _retryPolicy.scheduleRetry();
+    if (retryDelay == null) {
       return;
     }
 
-    _retryCount++;
-    final retryDelay = Duration(seconds: _retryCount * 2);
     debugPrint(
-      'BannerAd retry scheduled: retry=$_retryCount delay=${retryDelay.inSeconds}s width=$_lastRequestedWidth',
+      'BannerAd retry scheduled: retry=${_retryPolicy.retryCount} delay=${retryDelay.inSeconds}s width=$_lastRequestedWidth',
     );
 
-    Future.delayed(retryDelay, () {
+    _retryTimer = Timer(retryDelay, () {
+      _retryTimer = null;
+      _retryPolicy.beginScheduledRetry();
       if (mounted && !_isAdLoaded && _lastRequestedWidth > 0) {
         _loadBannerAd(_lastRequestedWidth);
       }
@@ -128,6 +142,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   @override
   void dispose() {
+    _retryTimer?.cancel();
     _bannerAd?.dispose();
     super.dispose();
   }
@@ -141,7 +156,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
         // 광고가 로드되지 않았어도 공간은 유지 (로딩 중 표시)
         if (!_isAdLoaded || _bannerAd == null) {
-          final message = _retryCount >= _maxRetries
+          final message = _retryPolicy.retryCount >= BannerAdRetryPolicy.maxRetries
               ? '광고를 불러올 수 없습니다'
               : '광고 로딩 중...';
           final fallbackHeight =
@@ -161,7 +176,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
                 message,
                 style: TextStyle(
                   fontSize: 12,
-                  color: _retryCount >= _maxRetries
+                  color: _retryPolicy.retryCount >= BannerAdRetryPolicy.maxRetries
                       ? Colors.grey.shade600
                       : Colors.grey,
                 ),
