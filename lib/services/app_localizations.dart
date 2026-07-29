@@ -79,6 +79,22 @@ class AppLocalizations {
       'selectLanguage': 'Select Language',
       'appTitle': 'RandomFocus',
       'appVersion': 'Version 1.0.0',
+      'version': 'Version',
+      'appUpdated': 'RandomFocus has been updated',
+      'whatsNew': "What's new",
+      'viewLatestChanges': 'View the latest changes',
+      'releaseNoteTimer': 'The timer now completes at the correct time.',
+      'releaseNoteNotice':
+          'See this update summary when a new version is installed.',
+      'releaseNoteVersion':
+          'The About screen now shows your installed app version.',
+      'releaseNotePlayUpdate':
+          'Get a friendly reminder when a new version is available on Google Play.',
+      'updateAvailable': 'Update available',
+      'updateAvailableMessage':
+          'A new version of RandomFocus is ready. Update now to enjoy the latest improvements.',
+      'updateNow': 'Update now',
+      'later': 'Later',
       'appDescription':
           'An app to help you maintain focus with random timer sessions.',
       'languageUpdated': 'Language updated.',
@@ -187,6 +203,23 @@ class AppLocalizations {
       'selectLanguage': 'Seleccionar Idioma',
       'appTitle': 'RandomFocus',
       'appVersion': 'Versión 1.0.0',
+      'version': 'Versión',
+      'appUpdated': 'RandomFocus se ha actualizado',
+      'whatsNew': 'Novedades',
+      'viewLatestChanges': 'Ver los cambios recientes',
+      'releaseNoteTimer':
+          'El temporizador ahora termina en el momento correcto.',
+      'releaseNoteNotice':
+          'Consulta este resumen cuando se instale una nueva versión.',
+      'releaseNoteVersion':
+          'La pantalla Acerca de ahora muestra la versión instalada.',
+      'releaseNotePlayUpdate':
+          'Recibe un recordatorio cuando haya una nueva versión en Google Play.',
+      'updateAvailable': 'Actualización disponible',
+      'updateAvailableMessage':
+          'Hay una nueva versión de RandomFocus. Actualiza ahora para disfrutar de las últimas mejoras.',
+      'updateNow': 'Actualizar ahora',
+      'later': 'Más tarde',
       'appDescription':
           'Una aplicación para ayudarte a mantener el enfoque con sesiones de temporizador aleatorias.',
       'languageUpdated': 'Idioma actualizado.',
@@ -294,6 +327,18 @@ class AppLocalizations {
       'selectLanguage': '选择语言',
       'appTitle': 'RandomFocus',
       'appVersion': '版本 1.0.0',
+      'version': '版本',
+      'appUpdated': 'RandomFocus 已更新',
+      'whatsNew': '更新内容',
+      'viewLatestChanges': '查看最新变化',
+      'releaseNoteTimer': '计时器现在会在正确的时间结束。',
+      'releaseNoteNotice': '安装新版本后可查看此更新摘要。',
+      'releaseNoteVersion': '“关于”页面现在会显示已安装的应用版本。',
+      'releaseNotePlayUpdate': 'Google Play 有新版本时会收到友好提醒。',
+      'updateAvailable': '有可用更新',
+      'updateAvailableMessage': 'RandomFocus 有新版本。立即更新以体验最新改进。',
+      'updateNow': '立即更新',
+      'later': '稍后',
       'appDescription': '一款通过随机计时器会话帮助您保持专注的应用。',
       'languageUpdated': '语言已更新。',
       'selectedOption': '已选择',

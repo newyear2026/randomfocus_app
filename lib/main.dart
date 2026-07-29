@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'pages/home_page.dart';
@@ -9,9 +10,15 @@ import 'services/app_localizations.dart';
 import 'services/interstitial_ad_manager.dart';
 import 'services/history_service.dart';
 import 'theme/app_theme.dart';
+import 'widgets/app_update_notice.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   // 과거 버전에서 초 단위로 잘못 저장된 히스토리의 selectedTime을 분으로 정규화
   await HistoryService.migrateSelectedTimeIfNeeded();
@@ -75,7 +82,11 @@ class _MyAppState extends State<MyApp> {
         GlobalCupertinoLocalizations.delegate,
       ],
       theme: AppTheme.lightTheme,
-      home: SplashPage(child: HomePage(onLanguageChanged: _changeLanguage)),
+      home: SplashPage(
+        child: AppUpdateNotice(
+          child: HomePage(onLanguageChanged: _changeLanguage),
+        ),
+      ),
       debugShowCheckedModeBanner: false,
     );
   }

@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../widgets/slide_in_widget.dart';
 import '../services/language_service.dart';
 import '../services/app_localizations.dart';
+import '../services/app_version_service.dart';
 import '../widgets/app_dialogs.dart';
 import '../widgets/app_feedback.dart';
 import '../widgets/app_bottom_sheet_option_tile.dart';
@@ -11,12 +12,18 @@ import '../widgets/app_screen.dart';
 import '../widgets/app_selection_tile.dart';
 import '../widgets/app_switch_tile.dart';
 import '../widgets/privacy_policy_sheet_content.dart';
+import '../widgets/app_update_notice.dart';
 import 'icon_preview_page.dart';
 
 class SettingsPage extends StatefulWidget {
   final Function(Locale)? onLanguageChanged;
+  final Future<AppVersion> Function() versionLoader;
 
-  const SettingsPage({super.key, this.onLanguageChanged});
+  const SettingsPage({
+    super.key,
+    this.onLanguageChanged,
+    this.versionLoader = AppVersionService.getCurrentVersion,
+  });
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -26,11 +33,20 @@ class _SettingsPageState extends State<SettingsPage> {
   final ScrollController _scrollController = ScrollController();
   String _currentLanguage = 'en';
   bool _notificationsEnabled = true;
+  AppVersion? _appVersion;
 
   @override
   void initState() {
     super.initState();
     _loadCurrentLanguage();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    final version = await widget.versionLoader();
+    if (mounted) {
+      setState(() => _appVersion = version);
+    }
   }
 
   Future<void> _loadCurrentLanguage() async {
@@ -104,7 +120,7 @@ class _SettingsPageState extends State<SettingsPage> {
       context: context,
       title: l10n?.about ?? 'About',
       message:
-          '${l10n?.appTitle ?? 'RandomFocus'}\n${l10n?.appVersion ?? 'Version 1.0.0'}',
+          '${l10n?.appTitle ?? 'RandomFocus'}\n${l10n?.translate('version') ?? 'Version'} ${_appVersion?.displayLabel ?? '...'}',
       variant: AppDialogVariant.info,
       child: Text(
         l10n?.appDescription ??
@@ -224,6 +240,20 @@ class _SettingsPageState extends State<SettingsPage> {
           SlideInWidget(
             index: 3,
             child: AppSelectionTile(
+              icon: Icons.new_releases_outlined,
+              title: l10n?.translate('whatsNew') ?? "What's new",
+              subtitle:
+                  l10n?.translate('viewLatestChanges') ??
+                  'View the latest changes',
+              onTap: _appVersion == null
+                  ? null
+                  : () => showAppUpdateNotice(context, _appVersion!),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SlideInWidget(
+            index: 4,
+            child: AppSelectionTile(
               icon: Icons.help_outline,
               title: l10n?.help ?? 'Help',
               subtitle: l10n?.howToUse ?? 'How to use the app',
@@ -232,7 +262,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const SizedBox(height: 8),
           SlideInWidget(
-            index: 4,
+            index: 5,
             child: AppSelectionTile(
               icon: Icons.privacy_tip_outlined,
               title: l10n?.privacyPolicy ?? 'Privacy Policy',
@@ -242,7 +272,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const SizedBox(height: 8),
           SlideInWidget(
-            index: 5,
+            index: 6,
             child: AppSelectionTile(
               icon: Icons.image_outlined,
               title: '앱 아이콘 미리보기',

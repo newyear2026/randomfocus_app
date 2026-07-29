@@ -25,10 +25,14 @@ class TimerPage extends StatefulWidget {
 enum TimerState { focus, breakTime }
 
 class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
-  Timer? _timer;
+  Timer? _ticker;
+  Timer? _completionTimer;
   int _remainingSeconds = 0;
+  Duration _remainingDuration = Duration.zero;
+  DateTime? _deadline;
   TimerState _currentState = TimerState.focus;
   bool _isRunning = false;
+  bool _isCompleting = false;
   int _originalFocusSeconds = 0;
   final int _originalBreakSeconds = 600; // 10분 (600초)
 
@@ -47,6 +51,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _originalFocusSeconds = widget.focusMinutes; // 초 단위
     _remainingSeconds = _originalFocusSeconds;
+    _remainingDuration = Duration(seconds: _originalFocusSeconds);
     _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
     InterstitialAdManager.instance.preload();
   }
@@ -54,7 +59,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _timer?.cancel();
+    _cancelTimers();
     _audioPlayer.dispose();
     // 페이지를 벗어날 때 세션이 저장되지 않았고 실행 중이었다면 중단으로 저장
     if (!_sessionSaved && _sessionStartTime != null && _elapsedSeconds > 0) {
@@ -71,6 +76,56 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
 
     if (state == AppLifecycleState.resumed) {
       _setScreenAwake(_isRunning);
+      _tick();
+    }
+  }
+
+  void _cancelTimers() {
+    _ticker?.cancel();
+    _ticker = null;
+    _completionTimer?.cancel();
+    _completionTimer = null;
+  }
+
+  int _displaySeconds(Duration duration) {
+    if (duration <= Duration.zero) return 0;
+    return (duration.inMilliseconds + Duration.millisecondsPerSecond - 1) ~/
+        Duration.millisecondsPerSecond;
+  }
+
+  /// 종료 시각을 기준으로 남은 시간을 다시 계산한다.
+  ///
+  /// 주기 타이머는 화면만 갱신하며, 시간의 기준은 항상 [_deadline]이다.
+  bool _captureRemainingFromClock() {
+    final deadline = _deadline;
+    if (deadline == null) return false;
+
+    final remaining = deadline.difference(DateTime.now());
+    _remainingDuration = remaining.isNegative ? Duration.zero : remaining;
+    _remainingSeconds = _displaySeconds(_remainingDuration);
+
+    if (_currentState == TimerState.focus) {
+      final elapsedMilliseconds =
+          (_originalFocusSeconds * Duration.millisecondsPerSecond) -
+          _remainingDuration.inMilliseconds;
+      _elapsedSeconds = (elapsedMilliseconds ~/ Duration.millisecondsPerSecond)
+          .clamp(0, _originalFocusSeconds);
+    }
+
+    return _remainingDuration == Duration.zero;
+  }
+
+  void _tick() {
+    if (!_isRunning || _isCompleting) return;
+
+    final isComplete = _captureRemainingFromClock();
+    if (isComplete) {
+      _onTimerComplete();
+      return;
+    }
+
+    if (mounted) {
+      setState(() {});
     }
   }
 
@@ -126,7 +181,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
   }
 
   void _startTimer() {
-    if (_isRunning) {
+    if (_isRunning || _isCompleting || _remainingDuration == Duration.zero) {
       return;
     }
 
@@ -148,24 +203,20 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
       _isRunning = true;
     });
 
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        if (_remainingSeconds > 0) {
-          _remainingSeconds--;
-          // 실제 진행 시간 추적 (집중 시간만)
-          if (_currentState == TimerState.focus) {
-            _elapsedSeconds++;
-          }
-        } else {
-          // 비동기 함수를 제대로 처리
-          _onTimerComplete();
-        }
-      });
-    });
+    _deadline = DateTime.now().add(_remainingDuration);
+    _ticker = Timer.periodic(const Duration(milliseconds: 250), (_) => _tick());
+    _completionTimer = Timer(_remainingDuration, _onTimerComplete);
+    _tick();
   }
 
   Future<void> _stopTimer() async {
-    _timer?.cancel();
+    final isComplete = _captureRemainingFromClock();
+    if (isComplete) {
+      _onTimerComplete();
+      return;
+    }
+    _cancelTimers();
+    _deadline = null;
 
     // Stop 시 현재 세션을 중단으로 저장 (집중 시간이 진행 중이었다면)
     if (_currentState == TimerState.focus &&
@@ -178,13 +229,17 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     // 화면 잠금 해제 (다시 정상적으로 꺼질 수 있도록, 웹이 아닐 때만)
     await _setScreenAwake(false);
 
-    setState(() {
-      _isRunning = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isRunning = false;
+      });
+    }
   }
 
   void _resetTimer() async {
-    _timer?.cancel();
+    _captureRemainingFromClock();
+    _cancelTimers();
+    _deadline = null;
 
     // 리셋 시 현재 세션을 중단으로 저장 (집중 시간이 진행 중이었다면)
     if (_currentState == TimerState.focus &&
@@ -197,10 +252,12 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     // 화면 잠금 해제 (다시 정상적으로 꺼질 수 있도록, 웹이 아닐 때만)
     await _setScreenAwake(false);
 
+    if (!mounted) return;
     setState(() {
       _isRunning = false;
       if (_currentState == TimerState.focus) {
         _remainingSeconds = _originalFocusSeconds;
+        _remainingDuration = Duration(seconds: _originalFocusSeconds);
         // 세션 초기화
         _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
         _sessionStartTime = null;
@@ -208,6 +265,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
         _sessionSaved = false;
       } else {
         _remainingSeconds = _originalBreakSeconds;
+        _remainingDuration = Duration(seconds: _originalBreakSeconds);
       }
     });
   }
@@ -255,7 +313,13 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
   }
 
   void _onTimerComplete() {
-    _timer?.cancel();
+    if (_isCompleting) return;
+    _isCompleting = true;
+    _captureRemainingFromClock();
+    _cancelTimers();
+    _deadline = null;
+    _remainingDuration = Duration.zero;
+    _remainingSeconds = 0;
 
     if (_currentState == TimerState.focus) {
       // 집중 시간 완료 -> 히스토리 저장 (completed 상태)
@@ -271,7 +335,9 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
               setState(() {
                 _currentState = TimerState.breakTime;
                 _remainingSeconds = _originalBreakSeconds;
+                _remainingDuration = Duration(seconds: _originalBreakSeconds);
                 _isRunning = false;
+                _isCompleting = false;
               });
               // 자동으로 휴식 타이머 시작 (화면은 계속 켜둠)
               _startTimer();
@@ -289,7 +355,9 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
               setState(() {
                 _currentState = TimerState.breakTime;
                 _remainingSeconds = _originalBreakSeconds;
+                _remainingDuration = Duration(seconds: _originalBreakSeconds);
                 _isRunning = false;
+                _isCompleting = false;
               });
               _startTimer();
             }
