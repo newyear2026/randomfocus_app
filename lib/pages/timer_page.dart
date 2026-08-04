@@ -7,6 +7,7 @@ import '../services/history_service.dart';
 import '../models/timer_history.dart';
 import '../services/app_localizations.dart';
 import '../services/interstitial_ad_manager.dart';
+import '../services/telemetry_service.dart';
 import '../widgets/app_dialogs.dart';
 import '../widgets/app_screen.dart';
 import '../widgets/banner_ad_widget.dart';
@@ -141,8 +142,12 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
 
       final isEnabled = await WakelockPlus.enabled;
       debugPrint('Wakelock state: requested=$enabled actual=$isEnabled');
-    } catch (error) {
-      debugPrint('Failed to update wakelock: $error');
+    } catch (error, stackTrace) {
+      await TelemetryService.reportError(
+        error,
+        stackTrace,
+        reason: 'wakelock_update',
+      );
     }
   }
 
@@ -206,6 +211,15 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     _deadline = DateTime.now().add(_remainingDuration);
     _ticker = Timer.periodic(const Duration(milliseconds: 250), (_) => _tick());
     _completionTimer = Timer(_remainingDuration, _onTimerComplete);
+    unawaited(
+      TelemetryService.logEvent(
+        'focus_timer_started',
+        parameters: {
+          'phase': _currentState == TimerState.focus ? 'focus' : 'break',
+          'focus_minutes': widget.focusMinutes ~/ 60,
+        },
+      ),
+    );
     _tick();
   }
 
@@ -310,6 +324,17 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
 
     await HistoryService.saveHistory(history);
     _sessionSaved = true;
+    unawaited(
+      TelemetryService.logEvent(
+        status == SessionStatus.completed
+            ? 'focus_session_completed'
+            : 'focus_session_stopped',
+        parameters: {
+          'focus_minutes': widget.focusMinutes ~/ 60,
+          'elapsed_seconds': _elapsedSeconds,
+        },
+      ),
+    );
   }
 
   void _onTimerComplete() {
@@ -343,7 +368,12 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
               _startTimer();
             }
           })
-          .catchError((error) {
+          .catchError((error, stackTrace) {
+            TelemetryService.reportError(
+              error,
+              stackTrace,
+              reason: 'history_save_after_focus_completion',
+            );
             // 세션 저장 실패 시 조용히 처리
             // 저장 실패해도 휴식 시간은 시작
             if (mounted) {

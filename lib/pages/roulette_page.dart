@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
 import 'timer_page.dart';
 import '../services/app_localizations.dart';
+import '../services/telemetry_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_dialogs.dart';
 import '../widgets/app_screen.dart';
@@ -49,6 +50,8 @@ class _RoulettePageState extends State<RoulettePage> {
       _pendingIndex = index;
     });
 
+    unawaited(TelemetryService.logEvent('roulette_spin_started'));
+
     // 룰렛 회전 시작
     _wheelController.add(index);
   }
@@ -58,6 +61,13 @@ class _RoulettePageState extends State<RoulettePage> {
 
     final selectedMinutes = _times[_pendingIndex!]; // 분 단위
     final selectedSeconds = selectedMinutes * 60; // 초 단위로 변환
+
+    unawaited(
+      TelemetryService.logEvent(
+        'roulette_result_viewed',
+        parameters: {'focus_minutes': selectedMinutes},
+      ),
+    );
 
     if (!mounted) return;
 
@@ -70,6 +80,16 @@ class _RoulettePageState extends State<RoulettePage> {
     setState(() {
       _pendingIndex = null;
     });
+
+    unawaited(
+      TelemetryService.logEvent(
+        'roulette_result_action',
+        parameters: {
+          'action': result ?? 'dismissed',
+          'focus_minutes': selectedMinutes,
+        },
+      ),
+    );
 
     if (result == 'spin_again') {
       _onSpinPressed();
@@ -118,102 +138,102 @@ class _RoulettePageState extends State<RoulettePage> {
       subtitle:
           l10n?.translate('spinToChoose') ?? 'Spin to choose your focus time',
       body: LayoutBuilder(
-              builder: (context, constraints) {
-                return RouletteShell(
-                  enabled: _pendingIndex == null,
-                  onSpinPressed: _onSpinPressed,
-                  spinLabel: l10n?.spin ?? 'Spin',
-                  spinSemanticsLabel: l10n?.spinWheel ?? 'Spin wheel',
-                  wheel: FortuneWheel(
-                    selected: _wheelController.stream,
-                    onAnimationEnd: _handleWheelAnimationEnd,
-                    indicators: <FortuneIndicator>[
-                      FortuneIndicator(
-                        alignment: Alignment.topCenter,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                Colors.white,
-                                Colors.white.withValues(alpha: 0.95),
-                              ],
+        builder: (context, constraints) {
+          return RouletteShell(
+            enabled: _pendingIndex == null,
+            onSpinPressed: _onSpinPressed,
+            spinLabel: l10n?.spin ?? 'Spin',
+            spinSemanticsLabel: l10n?.spinWheel ?? 'Spin wheel',
+            wheel: FortuneWheel(
+              selected: _wheelController.stream,
+              onAnimationEnd: _handleWheelAnimationEnd,
+              indicators: <FortuneIndicator>[
+                FortuneIndicator(
+                  alignment: Alignment.topCenter,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white,
+                          Colors.white.withValues(alpha: 0.95),
+                        ],
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.deepPurple.withValues(alpha: 0.4),
+                          blurRadius: 12,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 4),
+                        ),
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.deepPurple.shade600,
+                            Colors.deepPurple.shade800,
+                          ],
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: TriangleIndicator(
+                        color: Colors.white,
+                        width: 20,
+                        height: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              items: _times
+                  .map(
+                    (t) => FortuneItem(
+                      child: Text(
+                        '$t',
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 1.0,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black38,
+                              blurRadius: 6,
+                              offset: Offset(0, 3),
                             ),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.deepPurple.withValues(alpha: 0.4),
-                                blurRadius: 12,
-                                spreadRadius: 2,
-                                offset: const Offset(0, 4),
-                              ),
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.2),
-                                blurRadius: 8,
-                                spreadRadius: 1,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Colors.deepPurple.shade600,
-                                  Colors.deepPurple.shade800,
-                                ],
-                              ),
-                              shape: BoxShape.circle,
+                            Shadow(
+                              color: Colors.black12,
+                              blurRadius: 2,
+                              offset: Offset(0, 1),
                             ),
-                            child: TriangleIndicator(
-                              color: Colors.white,
-                              width: 20,
-                              height: 20,
-                            ),
-                          ),
+                          ],
                         ),
                       ),
-                    ],
-                    items: _times
-                        .map(
-                          (t) => FortuneItem(
-                            child: Text(
-                              '$t',
-                              style: const TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                letterSpacing: 1.0,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black38,
-                                    blurRadius: 6,
-                                    offset: Offset(0, 3),
-                                  ),
-                                  Shadow(
-                                    color: Colors.black12,
-                                    blurRadius: 2,
-                                    offset: Offset(0, 1),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            style: FortuneItemStyle(
-                              color: _colorForTime(t * 60),
-                              borderColor: Colors.white,
-                              borderWidth: 3,
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                );
-              },
+                      style: FortuneItemStyle(
+                        color: _colorForTime(t * 60),
+                        borderColor: Colors.white,
+                        borderWidth: 3,
+                      ),
+                    ),
+                  )
+                  .toList(),
             ),
+          );
+        },
+      ),
     );
   }
 }

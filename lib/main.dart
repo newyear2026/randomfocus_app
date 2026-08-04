@@ -13,6 +13,7 @@ import 'services/language_service.dart';
 import 'services/app_localizations.dart';
 import 'services/interstitial_ad_manager.dart';
 import 'services/history_service.dart';
+import 'services/telemetry_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/app_update_notice.dart';
 import 'firebase_options.dart';
@@ -20,9 +21,7 @@ import 'firebase_options.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // 처리되지 않은 Flutter 및 비동기 오류를 Crashlytics에 전송한다.
   FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
@@ -39,9 +38,12 @@ void main() async {
     try {
       await MobileAds.instance.initialize();
       InterstitialAdManager.instance.preload();
-    } catch (e) {
-      // 초기화 실패 시 조용히 처리
-      debugPrint('MobileAds 초기화 실패: $e');
+    } catch (error, stackTrace) {
+      await TelemetryService.reportError(
+        error,
+        stackTrace,
+        reason: 'mobile_ads_initialization',
+      );
     }
   }
 

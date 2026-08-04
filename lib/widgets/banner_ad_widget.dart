@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/ad_ids.dart';
 import '../services/banner_ad_retry_policy.dart';
+import '../services/telemetry_service.dart';
 
 /// 배너 광고 위젯
 class BannerAdWidget extends StatefulWidget {
@@ -101,6 +102,11 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
           );
           _isLoading = false;
           ad.dispose();
+          TelemetryService.reportError(
+            error,
+            StackTrace.current,
+            reason: 'banner_ad_load',
+          );
 
           if (mounted) {
             setState(() {
@@ -156,7 +162,8 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
         // 광고가 로드되지 않았어도 공간은 유지 (로딩 중 표시)
         if (!_isAdLoaded || _bannerAd == null) {
-          final message = _retryPolicy.retryCount >= BannerAdRetryPolicy.maxRetries
+          final message =
+              _retryPolicy.retryCount >= BannerAdRetryPolicy.maxRetries
               ? '광고를 불러올 수 없습니다'
               : '광고 로딩 중...';
           final fallbackHeight =
@@ -176,7 +183,8 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
                 message,
                 style: TextStyle(
                   fontSize: 12,
-                  color: _retryPolicy.retryCount >= BannerAdRetryPolicy.maxRetries
+                  color:
+                      _retryPolicy.retryCount >= BannerAdRetryPolicy.maxRetries
                       ? Colors.grey.shade600
                       : Colors.grey,
                 ),

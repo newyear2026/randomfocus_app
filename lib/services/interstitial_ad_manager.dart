@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'ad_ids.dart';
+import 'telemetry_service.dart';
 
 class InterstitialAdManager {
   InterstitialAdManager._();
@@ -42,6 +43,11 @@ class InterstitialAdManager {
           );
           _interstitialAd = null;
           _isLoading = false;
+          TelemetryService.reportError(
+            error,
+            StackTrace.current,
+            reason: 'interstitial_ad_load',
+          );
         },
       ),
     );
@@ -86,6 +92,11 @@ class InterstitialAdManager {
         );
         _isShowing = false;
         ad.dispose();
+        TelemetryService.reportError(
+          error,
+          StackTrace.current,
+          reason: 'interstitial_ad_show',
+        );
         preload();
         onUnavailable();
       },
