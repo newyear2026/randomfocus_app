@@ -25,20 +25,23 @@ void showAppSnackBar(
       action: action == null
           ? null
           : SnackBarAction(label: action.label, onPressed: action.onPressed),
-      backgroundColor: _backgroundColorForVariant(variant),
+      backgroundColor: _backgroundColorForVariant(context, variant),
     ),
   );
 }
 
-Color _backgroundColorForVariant(AppSnackBarVariant variant) {
+Color _backgroundColorForVariant(
+  BuildContext context,
+  AppSnackBarVariant variant,
+) {
   switch (variant) {
     case AppSnackBarVariant.info:
-      return AppColors.textPrimary;
+      return AppColors.textPrimary(context);
     case AppSnackBarVariant.success:
-      return AppColors.success;
+      return AppColors.statusSuccess(context);
     case AppSnackBarVariant.warning:
-      return AppColors.warning;
+      return AppColors.statusWarning(context);
     case AppSnackBarVariant.error:
-      return Colors.red;
+      return AppColors.statusDanger(context);
   }
 }

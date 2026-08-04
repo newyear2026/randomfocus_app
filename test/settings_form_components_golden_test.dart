@@ -50,7 +50,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(
+    await expectLater(
       find.byType(Scaffold),
       matchesGoldenFile('goldens/settings_form_components.png'),
     );

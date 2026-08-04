@@ -96,9 +96,13 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
 
+    // About 타일은 목록 아래쪽에 있으므로 먼저 화면 안으로 스크롤한다.
+    await tester.ensureVisible(find.text('About'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('About'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('v1.1.3 (10)'), findsOneWidget);
+    // 시트 안에서만 나타나는 앱 설명으로 실제로 열렸는지 확인한다.
+    expect(find.textContaining('Version v1.1.3 (10)'), findsOneWidget);
   });
 }

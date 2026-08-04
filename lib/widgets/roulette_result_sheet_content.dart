@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
+import '../theme/app_text_styles.dart';
 import 'app_action_button.dart';
 
 class RouletteResultSheetContent extends StatelessWidget {
@@ -28,22 +31,13 @@ class RouletteResultSheetContent extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 28),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                accentColor.withValues(alpha: 0.2),
-                accentColor.withValues(alpha: 0.12),
-                accentColor.withValues(alpha: 0.08),
-              ],
-              stops: const [0.0, 0.5, 1.0],
-            ),
-            borderRadius: BorderRadius.circular(28),
+            color: AppColors.statusFill(context, accentColor),
+            borderRadius: BorderRadius.circular(AppRadius.cardLarge),
             border: Border.all(
-              color: accentColor.withValues(alpha: 0.5),
-              width: 3,
+              color: accentColor.withValues(alpha: 0.35),
             ),
           ),
           child: Column(
@@ -51,28 +45,25 @@ class RouletteResultSheetContent extends StatelessWidget {
               Text(
                 '$selectedMinutes',
                 style: TextStyle(
-                  fontSize: 64,
-                  fontWeight: FontWeight.w900,
-                  color: accentColor,
-                  letterSpacing: 2.0,
+                  fontSize: 56,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary(context),
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                  letterSpacing: -1,
                   height: 1.1,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 4),
               Text(
                 minutesLabel,
-                style: TextStyle(
-                  fontSize: 22,
-                  color: Colors.grey.shade800,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.0,
-                  height: 1.3,
-                ),
+                style: AppTextStyles.body(
+                  context,
+                ).copyWith(fontSize: 16, letterSpacing: 0.3),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
         Row(
           children: [
             Expanded(
@@ -87,12 +78,7 @@ class RouletteResultSheetContent extends StatelessWidget {
                 onPressed: onStart,
                 label: startLabel,
                 height: 52,
-                textStyle: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8,
-                  height: 1.2,
-                ),
+                borderRadius: BorderRadius.circular(26),
               ),
             ),
           ],

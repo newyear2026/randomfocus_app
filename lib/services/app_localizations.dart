@@ -61,6 +61,15 @@ class AppLocalizations {
       'end': 'End',
 
       // Settings Page
+      'preferences': 'Preferences',
+      'information': 'Information',
+      'theme': 'Theme',
+      'selectTheme': 'Select theme',
+      'themeSystem': 'System default',
+      'themeLight': 'Light',
+      'themeDark': 'Dark',
+      'themeUpdated': 'Theme updated.',
+      'focusProgress': 'Focus progress',
       'notifications': 'Notifications',
       'manageAlerts': 'Manage your alerts',
       'language': 'Language',
@@ -185,6 +194,15 @@ class AppLocalizations {
       'end': 'Finalizar',
 
       // Settings Page
+      'preferences': 'Preferencias',
+      'information': 'Información',
+      'theme': 'Tema',
+      'selectTheme': 'Seleccionar tema',
+      'themeSystem': 'Predeterminado del sistema',
+      'themeLight': 'Claro',
+      'themeDark': 'Oscuro',
+      'themeUpdated': 'Tema actualizado.',
+      'focusProgress': 'Progreso de enfoque',
       'notifications': 'Notificaciones',
       'manageAlerts': 'Administra tus alertas',
       'language': 'Idioma',
@@ -309,6 +327,15 @@ class AppLocalizations {
       'end': '结束',
 
       // Settings Page
+      'preferences': '偏好设置',
+      'information': '信息',
+      'theme': '主题',
+      'selectTheme': '选择主题',
+      'themeSystem': '跟随系统',
+      'themeLight': '浅色',
+      'themeDark': '深色',
+      'themeUpdated': '主题已更新。',
+      'focusProgress': '专注进度',
       'notifications': '通知',
       'manageAlerts': '管理您的提醒',
       'language': '语言',
@@ -434,6 +461,11 @@ class AppLocalizations {
   String get end => translate('end');
   String get notifications => translate('notifications');
   String get manageAlerts => translate('manageAlerts');
+  String get preferences => translate('preferences');
+  String get information => translate('information');
+  String get theme => translate('theme');
+  String get selectTheme => translate('selectTheme');
+  String get themeUpdated => translate('themeUpdated');
   String get language => translate('language');
   String get about => translate('about');
   String get appInformation => translate('appInformation');

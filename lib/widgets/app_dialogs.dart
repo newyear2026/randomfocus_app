@@ -27,8 +27,11 @@ Future<void> showAppInfoDialog({
   return showDialog<void>(
     context: context,
     builder: (context) => AlertDialog(
-      icon: Icon(_iconForVariant(variant), color: _colorForVariant(variant)),
-      title: Text(title, style: AppTextStyles.sectionTitle),
+      icon: Icon(
+        _iconForVariant(variant),
+        color: _colorForVariant(context, variant),
+      ),
+      title: Text(title, style: AppTextStyles.sectionTitle(context)),
       content: Text(content, style: AppTextStyles.body(context)),
       actions: [
         TextButton(
@@ -52,8 +55,11 @@ Future<bool> showAppConfirmDialog({
   final result = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      icon: Icon(_iconForVariant(variant), color: _colorForVariant(variant)),
-      title: Text(title, style: AppTextStyles.sectionTitle),
+      icon: Icon(
+        _iconForVariant(variant),
+        color: _colorForVariant(context, variant),
+      ),
+      title: Text(title, style: AppTextStyles.sectionTitle(context)),
       content: Text(content, style: AppTextStyles.body(context)),
       actions: [
         TextButton(
@@ -79,14 +85,19 @@ Future<T?> showAppBottomSheet<T>({
   Widget? child,
   List<AppDialogAction> actions = const [],
   AppDialogVariant variant = AppDialogVariant.info,
-  bool isScrollControlled = false,
 }) {
+  // 기본 시트는 화면의 9/16까지만 커지기 때문에 선택지가 서너 개만 되어도
+  // 내용이 잘린다. 항상 스크롤 가능한 시트로 열고 높이만 제한해서, 짧은
+  // 내용은 내용 높이에 맞추고 긴 내용은 넘치는 대신 스크롤되게 한다.
   return showModalBottomSheet<T>(
     context: context,
-    isScrollControlled: isScrollControlled,
+    isScrollControlled: true,
     showDragHandle: true,
+    constraints: BoxConstraints(
+      maxHeight: MediaQuery.of(context).size.height * 0.85,
+    ),
     builder: (context) => SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -96,10 +107,12 @@ Future<T?> showAppBottomSheet<T>({
               children: [
                 Icon(
                   _iconForVariant(variant),
-                  color: _colorForVariant(variant),
+                  color: _colorForVariant(context, variant),
                 ),
                 const SizedBox(width: 12),
-                Expanded(child: Text(title, style: AppTextStyles.sectionTitle)),
+                Expanded(
+                  child: Text(title, style: AppTextStyles.sectionTitle(context)),
+                ),
               ],
             ),
             if (message != null) ...[
@@ -119,7 +132,10 @@ Future<T?> showAppBottomSheet<T>({
                           onPressed: action.onPressed,
                           style: action.isPrimary
                               ? TextButton.styleFrom(
-                                  foregroundColor: _colorForVariant(variant),
+                                  foregroundColor: _colorForVariant(
+                                    context,
+                                    variant,
+                                  ),
                                 )
                               : null,
                           child: Text(action.label),
@@ -147,13 +163,13 @@ IconData _iconForVariant(AppDialogVariant variant) {
   }
 }
 
-Color _colorForVariant(AppDialogVariant variant) {
+Color _colorForVariant(BuildContext context, AppDialogVariant variant) {
   switch (variant) {
     case AppDialogVariant.info:
-      return AppColors.brandPrimary;
+      return AppColors.accent(context);
     case AppDialogVariant.warning:
-      return AppColors.warning;
+      return AppColors.statusWarning(context);
     case AppDialogVariant.danger:
-      return Colors.red;
+      return AppColors.statusDanger(context);
   }
 }

@@ -34,7 +34,7 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    expect(
+    await expectLater(
       find.byType(AlertDialog),
       matchesGoldenFile('goldens/timer_confirm_dialog.png'),
     );

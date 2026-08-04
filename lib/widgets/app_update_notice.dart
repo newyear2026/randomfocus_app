@@ -58,7 +58,6 @@ Future<void> showAppUpdateNotice(BuildContext context, AppVersion version) {
     message:
         '${l10n?.translate('version') ?? 'Version'} ${version.displayLabel}',
     variant: AppDialogVariant.info,
-    isScrollControlled: true,
     child: Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,

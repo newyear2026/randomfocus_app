@@ -14,6 +14,7 @@ import 'services/app_localizations.dart';
 import 'services/interstitial_ad_manager.dart';
 import 'services/history_service.dart';
 import 'services/telemetry_service.dart';
+import 'services/theme_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/app_update_notice.dart';
 import 'firebase_options.dart';
@@ -59,11 +60,13 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   Locale _locale = const Locale('en');
+  ThemeMode _themeMode = ThemeMode.system;
 
   @override
   void initState() {
     super.initState();
     _loadSavedLanguage();
+    _loadSavedThemeMode();
   }
 
   Future<void> _loadSavedLanguage() async {
@@ -75,11 +78,27 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  Future<void> _loadSavedThemeMode() async {
+    final savedMode = await ThemeService.getSavedThemeMode();
+    if (mounted) {
+      setState(() {
+        _themeMode = savedMode;
+      });
+    }
+  }
+
   void _changeLanguage(Locale locale) {
     setState(() {
       _locale = locale;
     });
     LanguageService.saveLanguage(locale.languageCode);
+  }
+
+  void _changeThemeMode(ThemeMode mode) {
+    setState(() {
+      _themeMode = mode;
+    });
+    ThemeService.saveThemeMode(mode);
   }
 
   @override
@@ -95,12 +114,17 @@ class _MyAppState extends State<MyApp> {
         GlobalCupertinoLocalizations.delegate,
       ],
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: _themeMode,
       navigatorObservers: [
         FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
       ],
       home: SplashPage(
         child: AppUpdateNotice(
-          child: HomePage(onLanguageChanged: _changeLanguage),
+          child: HomePage(
+            onLanguageChanged: _changeLanguage,
+            onThemeModeChanged: _changeThemeMode,
+          ),
         ),
       ),
       debugShowCheckedModeBanner: false,

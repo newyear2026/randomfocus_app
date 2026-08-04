@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
-import '../theme/app_shadows.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 
@@ -22,12 +21,11 @@ class AppStatTile extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxHeight < 96;
-        final badgePadding = compact ? 6.0 : AppSpacing.sm;
-        final innerPadding = compact ? 4.0 : AppSpacing.sm - 2;
-        final iconSize = compact ? 16.0 : 20.0;
+        final badgeSize = compact ? 30.0 : 36.0;
+        final iconSize = compact ? 16.0 : 19.0;
         final valueStyle = AppTextStyles.statValue(
           context,
-        ).copyWith(fontSize: compact ? 14 : 16);
+        ).copyWith(fontSize: compact ? 15 : 17);
 
         return Center(
           child: FittedBox(
@@ -37,36 +35,21 @@ class AppStatTile extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
-                    padding: EdgeInsets.all(badgePadding),
+                    width: badgeSize,
+                    height: badgeSize,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: AppColors.iconBadgeBackground(context),
-                        stops: const [0.0, 0.5, 1.0],
-                      ),
+                      color: AppColors.accent(context).withValues(alpha: 0.12),
                       shape: BoxShape.circle,
-                      boxShadow: AppShadows.statBadge(
-                        Colors.deepPurple.withValues(alpha: 0.3),
-                      ),
                     ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: AppColors.iconBadgeForeground(context),
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                      padding: EdgeInsets.all(innerPadding),
-                      child: Icon(icon, color: Colors.white, size: iconSize),
+                    child: Icon(
+                      icon,
+                      color: AppColors.accentStrong(context),
+                      size: iconSize,
                     ),
                   ),
-                  SizedBox(height: compact ? 2 : AppSpacing.xs),
+                  SizedBox(height: compact ? AppSpacing.xxs : AppSpacing.xs),
                   Text(
                     value,
                     style: valueStyle,
@@ -74,7 +57,6 @@ class AppStatTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: compact ? 1 : AppSpacing.xxs),
                   Text(
                     label,
                     style: AppTextStyles.statLabel(context),

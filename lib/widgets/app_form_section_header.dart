@@ -13,17 +13,17 @@ class AppFormSectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xl,
         AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.lg,
+        AppSpacing.xl,
         AppSpacing.sm,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AppTextStyles.sectionTitle.copyWith(fontSize: 18)),
+          Text(title, style: AppTextStyles.groupLabel(context)),
           if (subtitle != null) ...[
-            const SizedBox(height: AppSpacing.xs),
+            const SizedBox(height: AppSpacing.xxs),
             Text(subtitle!, style: AppTextStyles.tileSubtitle(context)),
           ],
         ],

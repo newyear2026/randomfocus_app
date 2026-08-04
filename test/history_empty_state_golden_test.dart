@@ -22,7 +22,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(
+    await expectLater(
       find.byType(AppScreen),
       matchesGoldenFile('goldens/history_empty_state.png'),
     );

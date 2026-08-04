@@ -25,7 +25,7 @@ void main() {
   testWidgets('timer focus header golden', (tester) async {
     await pumpHeader(tester, title: 'Focus', subtitle: '1500 seconds');
 
-    expect(
+    await expectLater(
       find.byType(Scaffold),
       matchesGoldenFile('goldens/timer_focus_header.png'),
     );
@@ -34,7 +34,7 @@ void main() {
   testWidgets('timer break header golden', (tester) async {
     await pumpHeader(tester, title: 'Break', subtitle: '600 seconds');
 
-    expect(
+    await expectLater(
       find.byType(Scaffold),
       matchesGoldenFile('goldens/timer_break_header.png'),
     );

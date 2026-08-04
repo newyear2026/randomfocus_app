@@ -13,7 +13,7 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: SettingsPage()));
     await tester.pump(const Duration(seconds: 1));
 
-    expect(
+    await expectLater(
       find.byType(SettingsPage),
       matchesGoldenFile('goldens/settings_page.png'),
     );

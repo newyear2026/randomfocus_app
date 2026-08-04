@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
 import '../theme/app_text_styles.dart';
 import 'app_action_button.dart';
 
@@ -10,9 +11,14 @@ class TimerStatusPanel extends StatelessWidget {
   final String timeLabel;
   final String statusLabel;
   final bool isRunning;
+
+  /// 0.0 ~ 1.0. 현재 구간에서 실제로 지난 비율이며 진행 링을 이 값으로 채운다.
+  final double progress;
+
   final String startLabel;
   final String stopLabel;
   final String resetLabel;
+  final String progressSemanticsLabel;
   final VoidCallback? onStart;
   final VoidCallback? onStop;
   final VoidCallback? onReset;
@@ -24,9 +30,11 @@ class TimerStatusPanel extends StatelessWidget {
     required this.timeLabel,
     required this.statusLabel,
     required this.isRunning,
+    required this.progress,
     required this.startLabel,
     required this.stopLabel,
     required this.resetLabel,
+    this.progressSemanticsLabel = 'Focus progress',
     this.onStart,
     this.onStop,
     this.onReset,
@@ -39,123 +47,94 @@ class TimerStatusPanel extends StatelessWidget {
         final isTablet = constraints.maxWidth >= 600;
         final compact = constraints.maxHeight < 700;
         final timerSize = isTablet
-            ? 380.0
-            : constraints.maxWidth.clamp(260.0, 320.0);
-        final innerSize = timerSize - 40;
+            ? 360.0
+            : constraints.maxWidth.clamp(240.0, 300.0);
+        final clampedProgress = progress.clamp(0.0, 1.0);
+        final percentLabel = '${(clampedProgress * 100).round()}%';
 
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Expanded(
               child: Center(
-                child: SizedBox(
-                  width: timerSize,
-                  height: timerSize,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Container(
-                        width: timerSize,
-                        height: timerSize,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: SweepGradient(
-                            startAngle: 0,
-                            endAngle: 3.14159 * 2,
-                            colors: [
-                              stateColor.withValues(alpha: 0.2),
-                              stateColor.withValues(alpha: 0.1),
-                              stateColor.withValues(alpha: 0.2),
-                            ],
-                          ),
-                        ),
-                        child: SizedBox(
+                child: Semantics(
+                  label: progressSemanticsLabel,
+                  value: percentLabel,
+                  child: SizedBox(
+                    width: timerSize,
+                    height: timerSize,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // 진행 링은 실제 경과 비율만 표시한다. 안쪽에 별도의
+                        // 원판을 두지 않아야 가운데 숫자가 주인공이 된다.
+                        SizedBox(
                           width: timerSize,
                           height: timerSize,
-                          child: CircularProgressIndicator(
-                            value: isRunning ? 0.55 : 0.0,
-                            strokeWidth: 22,
-                            backgroundColor: stateColor.withValues(alpha: 0.12),
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              stateColor,
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween<double>(
+                              begin: 0,
+                              end: clampedProgress,
                             ),
-                            strokeCap: StrokeCap.round,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        width: innerSize,
-                        height: innerSize,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Colors.white,
-                              Colors.grey.shade50,
-                              Colors.white,
-                            ],
-                            stops: const [0.0, 0.5, 1.0],
-                          ),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: stateColor.withValues(alpha: 0.15),
-                              blurRadius: 25,
-                              spreadRadius: 3,
-                              offset: const Offset(0, 4),
-                            ),
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 15,
-                              spreadRadius: 1,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              stateLabel,
-                              style: TextStyle(
-                                fontSize: isTablet ? 32 : 28,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.textPrimary,
-                                letterSpacing: 1.2,
-                                height: 1.2,
-                              ),
-                            ),
-                            SizedBox(height: compact ? 12 : 20),
-                            Text(
-                              timeLabel,
-                              style: AppTextStyles.timerDisplay(context)
-                                  .copyWith(
-                                    fontSize: isTablet
-                                        ? 84
-                                        : (compact ? 60 : 72),
+                            duration: const Duration(milliseconds: 280),
+                            curve: Curves.easeOut,
+                            builder: (context, value, _) =>
+                                CircularProgressIndicator(
+                                  value: value,
+                                  strokeWidth: 9,
+                                  backgroundColor: stateColor.withValues(
+                                    alpha: 0.14,
                                   ),
-                            ),
-                            SizedBox(height: compact ? 12 : 20),
-                            Text(
-                              statusLabel,
-                              style: TextStyle(
-                                fontSize: compact ? 16 : 18,
-                                color: AppColors.textSecondary,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.5,
-                                height: 1.3,
-                              ),
-                            ),
-                          ],
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    stateColor,
+                                  ),
+                                  strokeCap: StrokeCap.round,
+                                ),
+                          ),
                         ),
-                      ),
-                    ],
+                        Padding(
+                          padding: const EdgeInsets.all(36),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                stateLabel,
+                                style: AppTextStyles.statLabel(context).copyWith(
+                                  fontSize: compact ? 13 : 14,
+                                  letterSpacing: 0.6,
+                                ),
+                              ),
+                              SizedBox(height: compact ? 6 : 10),
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  timeLabel,
+                                  style: AppTextStyles.timerDisplay(context)
+                                      .copyWith(
+                                        fontSize: isTablet
+                                            ? 76
+                                            : (compact ? 56 : 64),
+                                      ),
+                                ),
+                              ),
+                              SizedBox(height: compact ? 6 : 10),
+                              Text(
+                                statusLabel,
+                                style: AppTextStyles.tileSubtitle(
+                                  context,
+                                ).copyWith(fontSize: compact ? 13 : 14),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-            SizedBox(height: compact ? 24 : 60),
+            SizedBox(height: compact ? 24 : 40),
             if (isRunning)
               AppPrimaryButton(
                 width: double.infinity,
@@ -169,18 +148,10 @@ class TimerStatusPanel extends StatelessWidget {
                     child: AppPrimaryButton(
                       onPressed: onStart,
                       label: startLabel,
-                      leading: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.18),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.play_arrow,
-                          size: 24,
-                          color: Colors.white,
-                        ),
+                      leading: Icon(
+                        Icons.play_arrow,
+                        size: 24,
+                        color: AppColors.onAccent(context),
                       ),
                     ),
                   ),
@@ -194,45 +165,26 @@ class TimerStatusPanel extends StatelessWidget {
                         height: 60,
                         width: 60,
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [Colors.white, Colors.grey.shade50],
-                          ),
+                          color: AppColors.surfaceMuted(context),
                           shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withValues(alpha: 0.4),
-                              blurRadius: 15,
-                              offset: const Offset(0, 5),
-                            ),
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+                          border: Border.all(
+                            color: AppColors.subtleBorder(context),
+                          ),
                         ),
                         child: Material(
                           color: Colors.transparent,
+                          shape: const CircleBorder(),
+                          clipBehavior: Clip.antiAlias,
                           child: InkWell(
                             onTap: onReset,
-                            borderRadius: BorderRadius.circular(30),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [Colors.grey.shade100, Colors.white],
-                                ),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  Icons.refresh,
-                                  size: 28,
-                                  color: Colors.grey.shade800,
-                                ),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.button,
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.refresh,
+                                size: 26,
+                                color: AppColors.textSecondary(context),
                               ),
                             ),
                           ),

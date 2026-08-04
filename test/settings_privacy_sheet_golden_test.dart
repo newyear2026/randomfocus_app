@@ -38,7 +38,7 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    expect(
+    await expectLater(
       find.byType(Scaffold).last,
       matchesGoldenFile('goldens/settings_privacy_sheet.png'),
     );

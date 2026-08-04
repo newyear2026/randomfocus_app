@@ -10,6 +10,7 @@ void main() {
     required String statusLabel,
     required bool isRunning,
     required Color stateColor,
+    required double progress,
   }) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
 
@@ -24,6 +25,7 @@ void main() {
               timeLabel: timeLabel,
               statusLabel: statusLabel,
               isRunning: isRunning,
+              progress: progress,
               startLabel: 'Start',
               stopLabel: 'Stop',
               resetLabel: 'Reset timer',
@@ -32,7 +34,8 @@ void main() {
         ),
       ),
     );
-    await tester.pump();
+    // 진행 링이 목표 값까지 애니메이션한 뒤를 캡처한다.
+    await tester.pumpAndSettle();
   }
 
   testWidgets('timer idle state golden', (tester) async {
@@ -43,9 +46,10 @@ void main() {
       timeLabel: '25:00',
       statusLabel: 'Ready',
       isRunning: false,
+      progress: 0,
     );
 
-    expect(
+    await expectLater(
       find.byType(Scaffold),
       matchesGoldenFile('goldens/timer_idle_state.png'),
     );
@@ -59,9 +63,10 @@ void main() {
       timeLabel: '12:34',
       statusLabel: 'Running...',
       isRunning: true,
+      progress: 0.5,
     );
 
-    expect(
+    await expectLater(
       find.byType(Scaffold),
       matchesGoldenFile('goldens/timer_running_state.png'),
     );
@@ -75,9 +80,10 @@ void main() {
       timeLabel: '08:20',
       statusLabel: 'Running...',
       isRunning: true,
+      progress: 0.17,
     );
 
-    expect(
+    await expectLater(
       find.byType(Scaffold),
       matchesGoldenFile('goldens/timer_break_state.png'),
     );

@@ -19,20 +19,18 @@ class AppLoadingView extends StatelessWidget {
           SizedBox(
             width: indicatorSize,
             height: indicatorSize,
-            child: const CircularProgressIndicator(
+            child: CircularProgressIndicator(
               strokeWidth: 3,
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.brandPrimary),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                AppColors.accent(context),
+              ),
             ),
           ),
           if (message != null) ...[
-            const SizedBox(height: AppSpacing.xxl),
+            const SizedBox(height: AppSpacing.xl),
             Text(
               message!,
-              style: AppTextStyles.tileSubtitle(context).copyWith(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Colors.deepPurple.shade800,
-              ),
+              style: AppTextStyles.body(context),
               textAlign: TextAlign.center,
             ),
           ],

@@ -91,9 +91,11 @@ class _RoulettePageState extends State<RoulettePage> {
       ),
     );
 
+    // result == null 은 사용자가 시트를 밀어 닫은 경우다. 취소한 것이므로
+    // 타이머를 시작하지 않고 룰렛 화면에 그대로 머문다.
     if (result == 'spin_again') {
       _onSpinPressed();
-    } else if (result == 'start_timer' || result == null) {
+    } else if (result == 'start_timer') {
       await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => TimerPage(focusMinutes: selectedSeconds),
@@ -113,7 +115,7 @@ class _RoulettePageState extends State<RoulettePage> {
         children: [
           RouletteResultSheetContent(
             selectedMinutes: selectedMinutes,
-            accentColor: _colorForTime(selectedSeconds),
+            accentColor: _colorForTime(context, selectedSeconds),
             minutesLabel: AppLocalizations.of(context)?.minutes ?? 'minutes',
             spinAgainLabel:
                 AppLocalizations.of(context)?.translate('spinAgain') ??
@@ -148,53 +150,15 @@ class _RoulettePageState extends State<RoulettePage> {
               selected: _wheelController.stream,
               onAnimationEnd: _handleWheelAnimationEnd,
               indicators: <FortuneIndicator>[
+                // 삼각형 하나만으로 가리키는 위치를 표현한다. 원 배경을 덧대면
+                // 삼각형이 잘려 포인터가 아니라 얼룩처럼 보인다.
                 FortuneIndicator(
                   alignment: Alignment.topCenter,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Colors.white,
-                          Colors.white.withValues(alpha: 0.95),
-                        ],
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.deepPurple.withValues(alpha: 0.4),
-                          blurRadius: 12,
-                          spreadRadius: 2,
-                          offset: const Offset(0, 4),
-                        ),
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 8,
-                          spreadRadius: 1,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Colors.deepPurple.shade600,
-                            Colors.deepPurple.shade800,
-                          ],
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                      child: TriangleIndicator(
-                        color: Colors.white,
-                        width: 20,
-                        height: 20,
-                      ),
-                    ),
+                  child: TriangleIndicator(
+                    color: AppColors.accentStrong(context),
+                    width: 30,
+                    height: 30,
+                    elevation: 0,
                   ),
                 ),
               ],
@@ -204,28 +168,16 @@ class _RoulettePageState extends State<RoulettePage> {
                       child: Text(
                         '$t',
                         style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w900,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w600,
                           color: Colors.white,
-                          letterSpacing: 1.0,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black38,
-                              blurRadius: 6,
-                              offset: Offset(0, 3),
-                            ),
-                            Shadow(
-                              color: Colors.black12,
-                              blurRadius: 2,
-                              offset: Offset(0, 1),
-                            ),
-                          ],
+                          letterSpacing: 0.5,
                         ),
                       ),
                       style: FortuneItemStyle(
-                        color: _colorForTime(t * 60),
-                        borderColor: Colors.white,
-                        borderWidth: 3,
+                        color: _colorForTime(context, t * 60),
+                        borderColor: AppColors.surface(context),
+                        borderWidth: 2,
                       ),
                     ),
                   )
@@ -238,10 +190,13 @@ class _RoulettePageState extends State<RoulettePage> {
   }
 }
 
-/// 시간별로 다른 색상 할당 (이미지와 동일한 색상 순서)
-/// 분 단위 값에 맞게 색상 할당
+/// 시간별로 다른 색상 할당.
 /// 색상 순서: 주황(25), 빨강(30), 청록(45), 보라(50), 파랑(60), 분홍(90)
-Color _colorForTime(int seconds) {
+/// 다크 모드에서는 채도를 낮춘 변형을 쓴다.
+Color _colorForTime(BuildContext context, int seconds) {
   final minutes = seconds ~/ 60; // 분 단위로 변환
-  return AppColors.segmentColorForMinutes(minutes);
+  return AppColors.segmentColorForMinutes(
+    minutes,
+    dark: AppColors.isDark(context),
+  );
 }

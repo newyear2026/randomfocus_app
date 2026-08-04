@@ -43,7 +43,7 @@ void main() {
   testWidgets('home navigation wheel tab golden', (tester) async {
     await pumpNavigation(tester, 0);
 
-    expect(
+    await expectLater(
       find.byType(Scaffold),
       matchesGoldenFile('goldens/home_navigation_wheel.png'),
     );
@@ -52,7 +52,7 @@ void main() {
   testWidgets('home navigation history tab golden', (tester) async {
     await pumpNavigation(tester, 1);
 
-    expect(
+    await expectLater(
       find.byType(Scaffold),
       matchesGoldenFile('goldens/home_navigation_history.png'),
     );
@@ -61,7 +61,7 @@ void main() {
   testWidgets('home navigation settings tab golden', (tester) async {
     await pumpNavigation(tester, 2);
 
-    expect(
+    await expectLater(
       find.byType(Scaffold),
       matchesGoldenFile('goldens/home_navigation_settings.png'),
     );

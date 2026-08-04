@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
 import '../theme/app_text_styles.dart';
 import 'app_action_button.dart';
 import 'app_section_card.dart';
@@ -45,59 +47,29 @@ class RouletteShell extends StatelessWidget {
                 const SizedBox(height: 20),
                 AppSectionCard(
                   padding: EdgeInsets.all(cardPadding),
-                  radius: 28,
+                  radius: AppRadius.cardLarge,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.deepPurple.withValues(alpha: 0.25),
-                              blurRadius: 24,
-                              spreadRadius: 4,
-                              offset: const Offset(0, 8),
-                            ),
-                            BoxShadow(
-                              color: Colors.purple.withValues(alpha: 0.1),
-                              blurRadius: 40,
-                              spreadRadius: 8,
-                              offset: const Offset(0, 12),
-                            ),
-                          ],
-                        ),
-                        child: SizedBox(
-                          height: wheelSize,
-                          width: wheelSize,
-                          child: wheel,
-                        ),
+                      SizedBox(
+                        height: wheelSize,
+                        width: wheelSize,
+                        child: wheel,
                       ),
                       const SizedBox(height: 40),
                       AppPrimaryButton(
                         width: double.infinity,
                         height: 68,
-                        borderRadius: BorderRadius.circular(36),
+                        borderRadius: AppRadius.heroButtonBorder,
                         onPressed: enabled ? onSpinPressed : null,
                         label: spinLabel,
                         textStyle: AppTextStyles.largeButtonLabel,
-                        leading: SizedBox.square(
-                          dimension: 48,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.18),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Semantics(
-                                label: spinSemanticsLabel,
-                                child: const Icon(
-                                  Icons.autorenew,
-                                  size: 28,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
+                        leading: Semantics(
+                          label: spinSemanticsLabel,
+                          child: Icon(
+                            Icons.autorenew,
+                            size: 28,
+                            color: AppColors.onAccent(context),
                           ),
                         ),
                       ),

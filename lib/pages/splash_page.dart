@@ -52,10 +52,9 @@ class _SplashPageState extends State<SplashPage>
   }
 
   void _startAnimation() async {
-    _animationController.forward();
-
-    // 최소 2초간 스플래시 화면 표시
-    await Future.delayed(const Duration(milliseconds: 2000));
+    // 임의의 지연 대신 도입 애니메이션이 끝나면 바로 넘어간다.
+    // UX 가이드: 스플래시 체류 시간은 짧게 유지한다.
+    await _animationController.forward();
 
     if (mounted) {
       Navigator.of(context).pushReplacement(
@@ -160,38 +159,14 @@ class _SplashPageState extends State<SplashPage>
                         ),
                       ],
                     ),
-                    child: ShaderMask(
-                      shaderCallback: (bounds) => LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Colors.white,
-                          Colors.white.withValues(alpha: 0.95),
-                          Colors.white.withValues(alpha: 0.9),
-                        ],
-                      ).createShader(bounds),
-                      child: Text(
-                        'RandomFocus',
-                        style: AppTextStyles.appBarTitle.copyWith(
-                          fontSize: 38,
-                          letterSpacing: 3.5,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withValues(alpha: 0.5),
-                              blurRadius: 15,
-                              offset: const Offset(0, 6),
-                            ),
-                            Shadow(
-                              color: const Color(
-                                0xFF6366F1,
-                              ).withValues(alpha: 0.4),
-                              blurRadius: 25,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        textAlign: TextAlign.center,
+                    child: Text(
+                      'RandomFocus',
+                      style: AppTextStyles.appBarTitleBase.copyWith(
+                        color: Colors.white,
+                        fontSize: 34,
+                        letterSpacing: 1.5,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
                   const SizedBox(height: 48),

@@ -47,7 +47,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(
+    await expectLater(
       find.byType(Scaffold),
       matchesGoldenFile('goldens/history_session_cards.png'),
     );

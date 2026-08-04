@@ -51,7 +51,7 @@ void main() {
 
     await tester.pump();
 
-    expect(
+    await expectLater(
       find.byType(Scaffold),
       matchesGoldenFile('goldens/shared_state_widgets.png'),
     );

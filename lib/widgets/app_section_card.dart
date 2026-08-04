@@ -27,10 +27,10 @@ class AppSectionCard extends StatelessWidget {
       margin: margin,
       padding: padding,
       decoration: BoxDecoration(
-        color: gradient == null ? Colors.white : null,
+        color: gradient == null ? AppColors.surface(context) : null,
         gradient: gradient,
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: AppColors.subtleBorder(context), width: 1.2),
+        border: Border.all(color: AppColors.subtleBorder(context)),
         boxShadow: AppShadows.card(AppColors.softShadow(context)),
       ),
       child: child,

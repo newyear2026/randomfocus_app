@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../models/timer_history.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
 import '../theme/app_text_styles.dart';
 
 class HistorySessionCard extends StatelessWidget {
@@ -22,28 +24,32 @@ class HistorySessionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCompleted = session.status == SessionStatus.completed;
-    final accent = isCompleted ? Colors.green : Colors.orange;
+    // 상태 색은 룰렛 세그먼트 색과 겹치지 않도록 전용 상태 토큰을 쓴다.
+    final accent = isCompleted
+        ? AppColors.statusSuccess(context)
+        : AppColors.statusWarning(context);
     final statusLabel = isCompleted ? completedLabel : stoppedLabel;
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.deepPurple.withValues(alpha: 0.12)),
+        color: AppColors.surface(context),
+        borderRadius: BorderRadius.circular(AppRadius.tile),
+        border: Border.all(color: AppColors.subtleBorder(context)),
       ),
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.12),
+              color: AppColors.statusFill(context, accent),
               shape: BoxShape.circle,
             ),
             child: Icon(
               isCompleted ? Icons.check_circle : Icons.pause_circle,
-              color: accent.shade700,
+              color: accent,
+              size: 22,
             ),
           ),
           const SizedBox(width: 12),
@@ -53,11 +59,17 @@ class HistorySessionCard extends StatelessWidget {
               children: [
                 Text(
                   session.formattedTime,
-                  style: AppTextStyles.tileTitle.copyWith(fontSize: 16),
+                  style: AppTextStyles.tileTitle(context),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
+                // 한 줄로 이어 붙이면 큰 글꼴에서 구절 중간이 끊겨 읽힌다.
+                // 각 값을 자기 완결적인 줄로 분리한다.
                 Text(
-                  '$selectedTimeLabel: ${session.selectedTime}m  •  ${session.formattedActualTime} $actualLabel',
+                  '$selectedTimeLabel ${session.selectedTime}m',
+                  style: AppTextStyles.tileSubtitle(context),
+                ),
+                Text(
+                  '$actualLabel ${session.formattedActualTime}',
                   style: AppTextStyles.tileSubtitle(context),
                 ),
               ],
@@ -65,17 +77,17 @@ class HistorySessionCard extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.12),
+              color: AppColors.statusFill(context, accent),
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
               statusLabel,
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: accent.shade800,
+                fontWeight: FontWeight.w600,
+                color: accent,
               ),
             ),
           ),

@@ -37,7 +37,7 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    expect(
+    await expectLater(
       find.byType(BottomSheet),
       matchesGoldenFile('goldens/roulette_result_sheet.png'),
     );

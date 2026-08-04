@@ -16,13 +16,7 @@ class TimerHeaderContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(
-          title,
-          style: AppTextStyles.appBarTitle.copyWith(
-            fontSize: 24,
-            letterSpacing: 1.0,
-          ),
-        ),
+        Text(title, style: AppTextStyles.appBarTitle(context)),
         const SizedBox(height: 2),
         Text(subtitle, style: AppTextStyles.appBarSubtitle(context)),
       ],

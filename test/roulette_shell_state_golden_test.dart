@@ -41,7 +41,7 @@ void main() {
       icon: Icons.hourglass_top_rounded,
     );
 
-    expect(
+    await expectLater(
       find.byType(Scaffold),
       matchesGoldenFile('goldens/roulette_loading_state.png'),
     );
@@ -56,7 +56,7 @@ void main() {
       actionLabel: 'Refresh',
     );
 
-    expect(
+    await expectLater(
       find.byType(Scaffold),
       matchesGoldenFile('goldens/roulette_error_state.png'),
     );
@@ -70,7 +70,7 @@ void main() {
       icon: Icons.lock_clock_outlined,
     );
 
-    expect(
+    await expectLater(
       find.byType(Scaffold),
       matchesGoldenFile('goldens/roulette_no_spin_state.png'),
     );

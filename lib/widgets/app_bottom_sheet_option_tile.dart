@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
 import 'app_info_tile.dart';
 
 class AppBottomSheetOptionTile extends StatelessWidget {
@@ -23,8 +24,12 @@ class AppBottomSheetOptionTile extends StatelessWidget {
       title: title,
       subtitle: subtitle,
       trailing: selected
-          ? const Icon(Icons.check_circle, color: Colors.deepPurple)
-          : const Icon(Icons.chevron_right, size: 28),
+          ? Icon(Icons.check_circle, color: AppColors.accent(context))
+          : Icon(
+              Icons.chevron_right,
+              size: 24,
+              color: AppColors.textMuted(context),
+            ),
       onTap: onTap,
     );
   }

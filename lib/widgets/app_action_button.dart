@@ -29,6 +29,8 @@ class AppPrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radius = borderRadius ?? AppRadius.buttonBorder;
+    final fill = AppColors.primaryActionGradient(context);
+    final isDisabled = onPressed == null;
 
     return Container(
       width: width,
@@ -37,17 +39,24 @@ class AppPrimaryButton extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: AppColors.primaryActionGradient(context),
+          colors: isDisabled
+              ? fill
+                    .map((color) => color.withValues(alpha: 0.38))
+                    .toList(growable: false)
+              : fill,
           stops: const [0.0, 0.5, 1.0],
         ),
         borderRadius: radius,
-        boxShadow: AppShadows.button(Colors.deepPurple.withValues(alpha: 0.35)),
+        boxShadow: AppShadows.button(AppColors.softShadow(context)),
       ),
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.onAccent(context),
+          disabledForegroundColor: AppColors.onAccent(
+            context,
+          ).withValues(alpha: 0.7),
           shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(borderRadius: radius),
         ),
@@ -111,29 +120,15 @@ class AppSecondaryButton extends StatelessWidget {
           colors: AppColors.softSurfaceGradient(context),
         ),
         borderRadius: radius,
-        border: Border.all(
-          color: Colors.deepPurple.withValues(alpha: 0.25),
-          width: 2,
-        ),
-        boxShadow: AppShadows.iconBadge(
-          Colors.deepPurple.withValues(alpha: 0.12),
-        ),
+        border: Border.all(color: AppColors.accent(context).withValues(alpha: 0.4)),
       ),
       child: TextButton(
         onPressed: onPressed,
         style: TextButton.styleFrom(
-          foregroundColor: Colors.deepPurple.shade800,
+          foregroundColor: AppColors.accentStrong(context),
           shape: RoundedRectangleBorder(borderRadius: radius),
         ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.8,
-            height: 1.2,
-          ),
-        ),
+        child: Text(label, style: AppTextStyles.buttonLabel),
       ),
     );
   }

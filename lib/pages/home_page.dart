@@ -7,8 +7,13 @@ import '../widgets/app_bottom_navigation_bar.dart';
 
 class HomePage extends StatefulWidget {
   final Function(Locale)? onLanguageChanged;
+  final Function(ThemeMode)? onThemeModeChanged;
 
-  const HomePage({super.key, this.onLanguageChanged});
+  const HomePage({
+    super.key,
+    this.onLanguageChanged,
+    this.onThemeModeChanged,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -21,7 +26,10 @@ class _HomePageState extends State<HomePage> {
   List<Widget> get _pages => [
     const RoulettePage(),
     HistoryPage(key: _historyPageKey),
-    SettingsPage(onLanguageChanged: widget.onLanguageChanged),
+    SettingsPage(
+      onLanguageChanged: widget.onLanguageChanged,
+      onThemeModeChanged: widget.onThemeModeChanged,
+    ),
   ];
 
   @override

@@ -3,6 +3,9 @@ import 'package:table_calendar/table_calendar.dart';
 import '../services/history_service.dart';
 import '../models/timer_history.dart';
 import '../services/app_localizations.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
+import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_state.dart';
@@ -20,6 +23,9 @@ class HistoryPage extends StatefulWidget {
 }
 
 class _HistoryPageState extends State<HistoryPage> {
+  /// 캘린더 한 행의 높이. 접근성 가이드의 최소 터치 타겟 48을 만족한다.
+  static const double _calendarRowHeight = 48;
+
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
   final CalendarFormat _calendarFormat = CalendarFormat.month;
@@ -131,6 +137,21 @@ class _HistoryPageState extends State<HistoryPage> {
     return {'hours': hours, 'minutes': minutes};
   }
 
+  /// 그날 완료한 집중 시간을 0~1 강도로 환산한다.
+  ///
+  /// 캘린더 마커의 진하기로 쓰이며, 색 하나만으로 "기록 있음/없음"을
+  /// 전달하던 기존 방식보다 한 달치 패턴을 읽기 쉽게 만든다.
+  double _dailyIntensity(DateTime day) {
+    final completedSeconds = _getSessionsForDay(day)
+        .where((session) => session.status == SessionStatus.completed)
+        .fold<int>(0, (sum, session) => sum + session.actualTime);
+    if (completedSeconds <= 0) return 0;
+
+    // 90분을 하루 최대 집중량으로 보고 정규화한다.
+    const fullDaySeconds = 90 * 60;
+    return (completedSeconds / fullDaySeconds).clamp(0.25, 1.0);
+  }
+
   @override
   Widget build(BuildContext context) {
     final monthlyStats = _getMonthlyStats(_focusedDay);
@@ -143,7 +164,7 @@ class _HistoryPageState extends State<HistoryPage> {
       titleText: l10n?.history ?? 'History',
       actions: [
         IconButton(
-          icon: const Icon(Icons.refresh, color: Colors.white),
+          icon: const Icon(Icons.refresh),
           onPressed: _loadHistories,
           tooltip: l10n?.refreshHistory ?? 'Refresh history',
         ),
@@ -167,256 +188,199 @@ class _HistoryPageState extends State<HistoryPage> {
               actionLabel: l10n?.refresh ?? 'Refresh',
               onAction: _loadHistories,
             )
-          : Column(
+          // 화면을 고정 비율로 3등분하면 캘린더 셀이 최소 터치 타겟보다
+          // 작아진다. 대신 페이지 전체를 스크롤 가능하게 두고 캘린더에는
+          // 항상 충분한 행 높이를 준다.
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
               children: [
-                Expanded(
-                  flex: 5,
-                  child: AppSectionCard(
-                    margin: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-                    radius: 20,
-                    padding: const EdgeInsets.all(0),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final compactCalendar = constraints.maxHeight < 210;
-                        final headerVerticalPadding = compactCalendar
-                            ? 4.0
-                            : 8.0;
-                        final daysOfWeekHeight = compactCalendar ? 22.0 : 32.0;
-                        final headerHeight =
-                            (compactCalendar ? 24.0 : 28.0) +
-                            (headerVerticalPadding * 2);
-                        final availableRowsHeight =
-                            constraints.maxHeight -
-                            headerHeight -
-                            daysOfWeekHeight;
-                        final rowHeight = (availableRowsHeight / 6).clamp(
-                          18.0,
-                          compactCalendar ? 28.0 : 36.0,
-                        );
-                        final chevronSize = compactCalendar ? 18.0 : 20.0;
-                        final titleStyle = AppTextStyles.statValue(
-                          context,
-                        ).copyWith(fontSize: compactCalendar ? 14 : 16);
-
-                        return TableCalendar<TimerHistory>(
-                          firstDay: DateTime.utc(2020, 1, 1),
-                          lastDay: DateTime.utc(2030, 12, 31),
-                          focusedDay: _focusedDay,
-                          selectedDayPredicate: (day) {
-                            return isSameDay(_selectedDay, day);
-                          },
-                          calendarFormat: _calendarFormat,
-                          eventLoader: (day) {
-                            final dateKey = _getDateKey(day);
-                            final histories = _groupedHistories[dateKey] ?? [];
-                            // 완료된 세션이 있는 날짜에만 마커 표시
-                            return histories
-                                .where(
-                                  (h) => h.status == SessionStatus.completed,
-                                )
-                                .toList();
-                          },
-                          startingDayOfWeek: StartingDayOfWeek.monday,
-                          sixWeekMonthsEnforced: true,
-                          calendarBuilders: CalendarBuilders(
-                            markerBuilder: (context, date, events) {
-                              if (events.isNotEmpty) {
-                                return Positioned(
-                                  bottom: 2,
-                                  child: Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: BoxDecoration(
-                                      color: Colors.deepPurple.shade400,
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.deepPurple.withValues(
-                                            alpha: 0.3,
-                                          ),
-                                          blurRadius: 4,
-                                          spreadRadius: 1,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              }
-                              return const SizedBox.shrink();
-                            },
-                          ),
-                          headerStyle: HeaderStyle(
-                            formatButtonVisible: false,
-                            titleCentered: true,
-                            titleTextStyle: titleStyle,
-                            leftChevronIcon: Icon(
-                              Icons.chevron_left,
-                              color: Colors.deepPurple.shade700,
-                              size: chevronSize,
+                AppSectionCard(
+                  radius: AppRadius.cardLarge,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: _buildCalendar(context),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                AppSectionCard(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        height: 76,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: AppStatTile(
+                                label: l10n?.monthlySessions ?? 'Monthly',
+                                value: '${monthlyStats['totalSessions']}',
+                                icon: Icons.calendar_month,
+                              ),
                             ),
-                            rightChevronIcon: Icon(
-                              Icons.chevron_right,
-                              color: Colors.deepPurple.shade700,
-                              size: chevronSize,
+                            _buildDivider(context),
+                            Expanded(
+                              child: AppStatTile(
+                                label: l10n?.dailySessions ?? 'Today',
+                                value: '$dailySessions',
+                                icon: Icons.today,
+                              ),
                             ),
-                            headerPadding: EdgeInsets.symmetric(
-                              vertical: headerVerticalPadding,
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Divider(color: AppColors.subtleBorder(context)),
+                      const SizedBox(height: AppSpacing.sm),
+                      SizedBox(
+                        height: 76,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: AppStatTile(
+                                label: l10n?.monthlyFocused ?? 'Monthly Focused',
+                                value: monthlyStats['totalHours'] > 0
+                                    ? '${monthlyStats['totalHours']}h ${monthlyStats['totalMinutes']}m'
+                                    : '${monthlyStats['totalMinutes']}m',
+                                icon: Icons.timer_outlined,
+                              ),
                             ),
-                            leftChevronPadding: EdgeInsets.zero,
-                            rightChevronPadding: EdgeInsets.zero,
-                          ),
-                          rowHeight: rowHeight,
-                          daysOfWeekHeight: daysOfWeekHeight,
-                          daysOfWeekStyle: DaysOfWeekStyle(
-                            weekdayStyle: TextStyle(
-                              color: Colors.deepPurple.shade700,
-                              fontWeight: FontWeight.w700,
-                              fontSize: compactCalendar ? 11 : 12,
+                            _buildDivider(context),
+                            Expanded(
+                              child: AppStatTile(
+                                label: l10n?.dailyFocused ?? 'Today Focused',
+                                value: dailyFocused['hours']! > 0
+                                    ? '${dailyFocused['hours']}h ${dailyFocused['minutes']}m'
+                                    : '${dailyFocused['minutes']}m',
+                                icon: Icons.access_time,
+                              ),
                             ),
-                            weekendStyle: TextStyle(
-                              color: Colors.deepPurple.shade700,
-                              fontWeight: FontWeight.w700,
-                              fontSize: compactCalendar ? 11 : 12,
-                            ),
-                          ),
-                          calendarStyle: CalendarStyle(
-                            outsideDaysVisible: false,
-                            weekendTextStyle: TextStyle(
-                              color: Colors.deepPurple.shade700,
-                              fontSize: compactCalendar ? 12 : 13,
-                            ),
-                            defaultTextStyle: TextStyle(
-                              color: Colors.deepPurple.shade800,
-                              fontSize: compactCalendar ? 12 : 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            selectedDecoration: const BoxDecoration(
-                              color: Colors.deepPurple,
-                              shape: BoxShape.circle,
-                            ),
-                            todayDecoration: BoxDecoration(
-                              color: Colors.deepPurple.shade100,
-                              shape: BoxShape.circle,
-                            ),
-                            markerDecoration: BoxDecoration(
-                              color: Colors.deepPurple.shade400,
-                              shape: BoxShape.circle,
-                            ),
-                            markersMaxCount: 1,
-                            markerSize: compactCalendar ? 5 : 6,
-                            markerMargin: const EdgeInsets.only(bottom: 1),
-                          ),
-                          onDaySelected: (selectedDay, focusedDay) {
-                            setState(() {
-                              _selectedDay = selectedDay;
-                              _focusedDay = focusedDay;
-                            });
-                          },
-                          onPageChanged: (focusedDay) {
-                            setState(() {
-                              _focusedDay = focusedDay;
-                            });
-                          },
-                        );
-                      },
-                    ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                Flexible(
-                  flex: 3,
-                  child: AppSectionCard(
-                    margin: const EdgeInsets.fromLTRB(12, 0, 12, 4),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.deepPurple.shade50,
-                        Colors.purple.shade50,
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Flexible(
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: AppStatTile(
-                                  label: l10n?.monthlySessions ?? 'Monthly',
-                                  value: '${monthlyStats['totalSessions']}',
-                                  icon: Icons.calendar_month,
-                                ),
-                              ),
-                              _buildDivider(),
-                              Expanded(
-                                child: AppStatTile(
-                                  label: l10n?.dailySessions ?? 'Today',
-                                  value: '$dailySessions',
-                                  icon: Icons.today,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Divider(
-                          color: Colors.deepPurple.withValues(alpha: 0.2),
-                          height: 1,
-                        ),
-                        const SizedBox(height: 4),
-                        Flexible(
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: AppStatTile(
-                                  label:
-                                      l10n?.monthlyFocused ?? 'Monthly Focused',
-                                  value: monthlyStats['totalHours'] > 0
-                                      ? '${monthlyStats['totalHours']}h ${monthlyStats['totalMinutes']}m'
-                                      : '${monthlyStats['totalMinutes']}m',
-                                  icon: Icons.timer_outlined,
-                                ),
-                              ),
-                              _buildDivider(),
-                              Expanded(
-                                child: AppStatTile(
-                                  label: l10n?.dailyFocused ?? 'Today Focused',
-                                  value: dailyFocused['hours']! > 0
-                                      ? '${dailyFocused['hours']}h ${dailyFocused['minutes']}m'
-                                      : '${dailyFocused['minutes']}m',
-                                  icon: Icons.access_time,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 5,
-                  child: AppSectionCard(
-                    margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                    padding: const EdgeInsets.all(16),
-                    child: _buildSelectedDaySection(context),
-                  ),
+                const SizedBox(height: AppSpacing.md),
+                AppSectionCard(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: _buildSelectedDaySection(context),
                 ),
               ],
             ),
     );
   }
 
-  Widget _buildDivider() {
+  Widget _buildCalendar(BuildContext context) {
+    final accent = AppColors.accent(context);
+
+    return TableCalendar<TimerHistory>(
+      firstDay: DateTime.utc(2020, 1, 1),
+      lastDay: DateTime.utc(2030, 12, 31),
+      focusedDay: _focusedDay,
+      selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+      calendarFormat: _calendarFormat,
+      eventLoader: (day) {
+        final dateKey = _getDateKey(day);
+        final histories = _groupedHistories[dateKey] ?? [];
+        // 완료된 세션이 있는 날짜에만 마커 표시
+        return histories
+            .where((h) => h.status == SessionStatus.completed)
+            .toList();
+      },
+      startingDayOfWeek: StartingDayOfWeek.monday,
+      sixWeekMonthsEnforced: true,
+      // 최소 터치 타겟 48을 만족하는 행 높이.
+      rowHeight: _calendarRowHeight,
+      daysOfWeekHeight: 28,
+      calendarBuilders: CalendarBuilders(
+        markerBuilder: (context, date, events) {
+          if (events.isEmpty) return const SizedBox.shrink();
+
+          // 마커의 진하기로 그날의 집중량을 함께 전달한다.
+          final intensity = _dailyIntensity(date);
+          return Positioned(
+            bottom: 6,
+            child: Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: intensity),
+                shape: BoxShape.circle,
+              ),
+            ),
+          );
+        },
+      ),
+      headerStyle: HeaderStyle(
+        formatButtonVisible: false,
+        titleCentered: true,
+        titleTextStyle: AppTextStyles.statValue(context),
+        leftChevronIcon: Icon(
+          Icons.chevron_left,
+          color: AppColors.textSecondary(context),
+        ),
+        rightChevronIcon: Icon(
+          Icons.chevron_right,
+          color: AppColors.textSecondary(context),
+        ),
+        headerPadding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      ),
+      daysOfWeekStyle: DaysOfWeekStyle(
+        weekdayStyle: AppTextStyles.statLabel(context),
+        weekendStyle: AppTextStyles.statLabel(context),
+      ),
+      calendarStyle: CalendarStyle(
+        outsideDaysVisible: false,
+        cellMargin: const EdgeInsets.all(4),
+        weekendTextStyle: TextStyle(
+          color: AppColors.textMuted(context),
+          fontSize: 14,
+        ),
+        defaultTextStyle: TextStyle(
+          color: AppColors.textPrimary(context),
+          fontSize: 14,
+        ),
+        selectedDecoration: BoxDecoration(
+          color: accent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        selectedTextStyle: TextStyle(
+          color: AppColors.onAccent(context),
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+        todayDecoration: BoxDecoration(
+          color: accent.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        todayTextStyle: TextStyle(
+          color: AppColors.accentStrong(context),
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+        markersMaxCount: 1,
+      ),
+      onDaySelected: (selectedDay, focusedDay) {
+        setState(() {
+          _selectedDay = selectedDay;
+          _focusedDay = focusedDay;
+        });
+      },
+      onPageChanged: (focusedDay) {
+        setState(() {
+          _focusedDay = focusedDay;
+        });
+      },
+    );
+  }
+
+  Widget _buildDivider(BuildContext context) {
     return Container(
       width: 1,
-      height: 30,
-      color: Colors.deepPurple.withValues(alpha: 0.2),
+      height: 40,
+      color: AppColors.subtleBorder(context),
     );
   }
 
@@ -425,6 +389,7 @@ class _HistoryPageState extends State<HistoryPage> {
     final sessions = _getSessionsForDay(_selectedDay);
 
     return HistoryDayDetailSection(
+      shrinkWrap: true,
       selectedDateLabel: _getDateKey(_selectedDay),
       sessions: sessions,
       emptyTitle: l10n?.noSessionsOnThisDay ?? 'No sessions for this day',

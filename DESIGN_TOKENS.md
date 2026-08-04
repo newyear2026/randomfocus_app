@@ -2,73 +2,120 @@
 
 This document captures the design tokens and reusable UI rules currently used by the Flutter app.
 
+All values that get painted on screen resolve through `BuildContext` so light and
+dark mode share one token vocabulary. Never hardcode `Colors.white` or
+`Colors.deepPurple.shadeXXX` in a page or widget — reach for a token instead.
+
+Code source: `lib/theme/`
+
 ## Color Tokens
 
 ### Brand
-- `brandPrimary`: `#673AB7`
+
+- `brandPrimary`: `Colors.deepPurple`
+- `brandPrimaryDark`: `#CFBCFF` (dark mode accent)
+- `onBrandPrimaryDark`: `#381E72`
 - `brandSecondary`: `#3F51B5`
-- `brandAccent`: `#9C27B0`
-- `brandSurface`: `#FFFFFF`
+- `brandAccent`: `Colors.purple`
 
-### Backgrounds
-- `screenBackgroundStart`: `deepPurple.shade50`
-- `screenBackgroundMid`: `purple.shade50`
-- `screenBackgroundEnd`: `#FFFFFF`
+### Context-resolved roles
 
-### App Bar
-- `appBarStart`: `deepPurple.shade700`
-- `appBarMid`: `deepPurple.shade500`
-- `appBarEnd`: `purple.shade400`
+| Token | Light | Dark |
+| --- | --- | --- |
+| `accent` | `deepPurple.shade600` | `#CFBCFF` |
+| `onAccent` | `#FFFFFF` | `#381E72` |
+| `accentStrong` | `deepPurple.shade800` | `#CFBCFF` |
+| `surface` | `#FFFFFF` | `#211E26` |
+| `surfaceMuted` | `#F7F5FB` | `#2B2930` |
+| `background` | `#FFFFFF` | `#141218` |
+| `textPrimary` | `#1F2937` | `#E7E0EC` |
+| `textSecondary` | `#4B5563` | `#CAC4D0` |
+| `textMuted` | `#6B7280` | `#948F99` |
+| `subtleBorder` | brand primary @ `0.14` | `#49454F` |
+| `onAppBar` | `#FFFFFF` | `#E7E0EC` |
 
-### Status / Utility
-- `success`: `#10B981`
-- `warning`: `#FF9800`
-- `danger`: `#EF4444`
-- `info`: `#3B82F6`
-- `textPrimary`: `#1F2937`
-- `textSecondary`: `#4B5563`
-- `textMuted`: `#6B7280`
-- `borderSubtle`: brand primary at `0.14`
+### Gradients
+
+- `screenBackground`: light `deepPurple.50 → purple.50 → white`; dark near-flat `#141218 → #181521 → #141218`
+- `appBarGradient`: light `deepPurple.700 → deepPurple.500 → purple.400`; dark flat `#211E26`
+- `primaryActionGradient`: light `deepPurple.600 → deepPurple → purple.600`; dark flat `#CFBCFF`
+
+### Session status
+
+Status colors are separate from roulette segment colors so "completed" never
+shares a hue with a duration segment.
+
+| Token | Light | Dark |
+| --- | --- | --- |
+| `statusSuccess` | `#0F7A56` | `#4ADE80` |
+| `statusWarning` | `#B45309` | `#FBBF24` |
+| `statusDanger` | `#B91C1C` | `#FCA5A5` |
+| `statusFill` | status @ `0.12` | status @ `0.22` |
 
 ### Roulette Segment Colors
-- `25m`: `#FF9800`
-- `30m`: `#EF4444`
-- `45m`: `#10B981`
-- `50m`: `#6366F1`
-- `60m`: `#3B82F6`
-- `90m`: `#EC4899`
+
+| Minutes | Light | Dark |
+| --- | --- | --- |
+| `25` | `#FF9800` | `#B26A12` |
+| `30` | `#EF4444` | `#A8393A` |
+| `45` | `#10B981` | `#0D7357` |
+| `50` | `#6366F1` | `#4A4CB8` |
+| `60` | `#3B82F6` | `#2A5FA8` |
+| `90` | `#EC4899` | `#A83571` |
+
+Dark variants are desaturated so the wheel does not glow against a dark surface.
+
+Code source: `lib/theme/app_colors.dart`
 
 ## Typography Tokens
 
+No text style carries a shadow. Contrast comes from color; shadows only blur
+glyph edges and cost render time.
+
+Two weights carry the hierarchy: `w600` for emphasis, `w400`–`w500` for body.
+
 ### Titles
-- `screenTitle`: `26 / w900 / letterSpacing 1.2 / white`
-- `sectionTitle`: `22 / w900 / letterSpacing 0.5`
-- `statValue`: `16 / w900 / letterSpacing 0.8`
+
+- `appBarTitle`: `22 / w700 / letterSpacing 0.2`
+- `sectionTitle`: `20 / w700`
+- `groupLabel`: `13 / w600 / letterSpacing 0.4 / secondary` — form group headers
+- `tileTitle`: `16 / w600`
 
 ### Body
-- `tileTitle`: `18 / w800`
-- `tileSubtitle`: `14 / w500 / muted`
-- `body`: `15 / height 1.6`
-- `caption`: `13 / w600`
+
+- `body`: `15 / height 1.6 / secondary`
+- `tileSubtitle`: `14 / w400 / muted`
+- `appBarSubtitle`: `13 / w500 / onAppBar @ 0.85`
 
 ### Numeric / Emphasis
-- `timerDisplay`: `72 / w900 / tabular figures`
-- `heroButton`: `22-26 / w900 / letterSpacing 1.5-2.0`
 
-## Shape Tokens
+- `timerDisplay`: `64 / w600 / tabular figures`
+- `statValue`: `17 / w700`
+- `statLabel`: `12 / w500 / muted` — never below 11
+- `buttonLabel`: `17 / w600 / letterSpacing 0.3`
+- `largeButtonLabel`: `20 / w600 / letterSpacing 0.5`
 
-- `inputRadius`: `12`
-- `tileRadius`: `16`
-- `cardRadius`: `18`
-- `largeCardRadius`: `28`
-- `pillRadius`: `30`
-- `heroButtonRadius`: `36`
+Code source: `lib/theme/app_text_styles.dart`
+
+## Radius Tokens
+
+Material 3 shape scale, five steps only.
+
+- `input`: `12`
+- `badge`: `12`
+- `tile`: `16`
+- `card`: `16`
+- `cardLarge`: `24`
+- `dialog`: `28`
+- `button`: `30` (pill for height 60)
+- `heroButton`: `34` (pill for height 68)
+
+Code source: `lib/theme/app_radius.dart`
 
 ## Spacing Tokens
 
+- `xxs 2` · `xs 4` · `sm 8` · `md 12` · `lg 16` · `xl 20` · `xxl 24` · `xxxl 32` · `hero 40` · `section 48`
 - `screenHorizontal`: `24`
-- `sectionGap`: `16`
-- `tileGap`: `8`
 - `cardPadding`: `20`
 - `largeCardPadding`: `32`
 - `buttonHeight`: `60`
@@ -78,58 +125,60 @@ Code source: `lib/theme/app_spacing.dart`
 
 ## Elevation / Shadow Tokens
 
-- `cardShadow`: blur `12-20`, y `4-6`, opacity `0.08-0.15`
-- `heroShadow`: blur `20-30`, y `8-10`, opacity `0.2-0.5`
-- `iconShadow`: blur `8-10`, y `3`, opacity `0.25-0.3`
+Shadows communicate "this surface floats above another". Decorative stacking is
+not allowed — a single shadow per elevated surface.
+
+- `card`: blur `10`, y `2` — the only shadow in the system
+- `button`, `iconBadge`, `statBadge`: intentionally empty; these are flat and
+  rely on color contrast
 
 Code source: `lib/theme/app_shadows.dart`
-
-## Radius Tokens
-
-- `input`: `12`
-- `badge`: `14`
-- `tile`: `16`
-- `card`: `18`
-- `cardLarge`: `20`
-- `dialog`: `28`
-- `button`: `30`
-- `heroButton`: `36`
-
-Code source: `lib/theme/app_radius.dart`
 
 ## Reusable Patterns
 
 ### Screen Frame
-- Gradient screen background
+
+- Gradient screen background (near-flat in dark)
 - Transparent scaffold
-- Gradient app bar
-- Large centered title with compact subtitle
+- Gradient app bar (flat surface in dark)
+- Centered title with compact subtitle
 
 ### Section Card
-- White or soft gradient background
-- Rounded corners
-- One subtle border
-- Purple-tinted shadow
+
+- `surface` background, one hairline border, one soft shadow
+- `AppRadius.card`, or `cardLarge` for hero containers
 
 ### Settings / Info Tile
-- Card shell
-- Gradient icon badge
-- Strong title + muted subtitle
-- Optional chevron / trailing control
+
+- Flat tinted square icon badge (no nested gradients)
+- `tileTitle` + muted subtitle
+- Optional chevron or trailing control
+- `grouped: true` drops the per-tile card so several tiles share one card with
+  dividers
 
 ### CTA Button
-- Purple gradient fill
-- Large rounded corners
-- White bold text
-- One strong outer shadow
+
+- `primaryActionGradient` fill, pill radius, `onAccent` label
+- No shadow; disabled state drops fill to `0.38` alpha
 
 ### Stats Tile
-- Circular icon badge
-- Bold value
-- Compact two-line label
 
-## Current Gaps
+- Circular tinted icon badge
+- `statValue` over `statLabel`
 
-- Some pages still contain screen-specific decoration values inline.
-- Spacing and shadow constants are documented here, but only color and text tokens are fully centralized in code.
-- Timer naming still mixes minutes/seconds in a few identifiers.
+### Progress Ring
+
+- Stroke `9`, rounded caps, track at accent `0.14`
+- Value is always real progress — never a decorative constant
+- Animates to its target over `280ms`
+
+### Bottom Navigation
+
+- Fixed `64` height; icon size and padding never change with selection
+- Selection shown by a `56x32` pill behind the icon
+
+## Accessibility Floors
+
+- Minimum touch target `48x48` (calendar rows use `48`)
+- Minimum font size `11`
+- Meaning is never carried by color alone (calendar markers also vary in density)

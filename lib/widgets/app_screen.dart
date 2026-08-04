@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
@@ -51,6 +52,20 @@ class AppScreen extends StatelessWidget {
           automaticallyImplyLeading: automaticallyImplyLeading,
           leading: leading,
           actions: actions,
+          foregroundColor: AppColors.onAppBar(context),
+          iconTheme: IconThemeData(color: AppColors.onAppBar(context)),
+          actionsIconTheme: IconThemeData(color: AppColors.onAppBar(context)),
+          // 앱바는 라이트/다크 모두 어두운 배경이므로 상태바 아이콘은 항상
+          // 밝게 둔다. 시스템 네비게이션 바 아이콘만 현재 밝기를 따라간다.
+          systemOverlayStyle: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.light,
+            statusBarBrightness: Brightness.dark,
+            systemNavigationBarColor: Colors.transparent,
+            systemNavigationBarIconBrightness: AppColors.isDark(context)
+                ? Brightness.light
+                : Brightness.dark,
+          ),
           flexibleSpace: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -79,12 +94,12 @@ class _ScreenTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (subtitle == null || subtitle!.isEmpty) {
-      return Text(titleText ?? '', style: AppTextStyles.appBarTitle);
+      return Text(titleText ?? '', style: AppTextStyles.appBarTitle(context));
     }
 
     return Column(
       children: [
-        Text(titleText ?? '', style: AppTextStyles.appBarTitle),
+        Text(titleText ?? '', style: AppTextStyles.appBarTitle(context)),
         const SizedBox(height: AppSpacing.xs),
         Text(subtitle!, style: AppTextStyles.appBarSubtitle(context)),
       ],

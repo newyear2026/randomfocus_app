@@ -30,7 +30,7 @@ void main() {
     await pumpWithTextScale(tester, child: const SettingsPage(), scale: 1.3);
     await tester.pump(const Duration(seconds: 1));
 
-    expect(find.text('Notifications'), findsOneWidget);
+    expect(find.text('Theme'), findsOneWidget);
     expect(find.text('Language'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -81,7 +81,7 @@ void main() {
     await pumpWithTextScale(tester, child: const SettingsPage(), scale: 1.8);
     await tester.pump(const Duration(seconds: 1));
 
-    expect(find.text('Notifications'), findsOneWidget);
+    expect(find.text('Theme'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

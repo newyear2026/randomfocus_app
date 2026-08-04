@@ -44,7 +44,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(
+    await expectLater(
       find.byType(Scaffold),
       matchesGoldenFile('goldens/roulette_shell.png'),
     );

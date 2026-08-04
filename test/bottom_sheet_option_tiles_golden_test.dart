@@ -41,7 +41,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(
+    await expectLater(
       find.byType(Scaffold),
       matchesGoldenFile('goldens/bottom_sheet_option_tiles.png'),
     );

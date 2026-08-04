@@ -8,6 +8,8 @@ import '../models/timer_history.dart';
 import '../services/app_localizations.dart';
 import '../services/interstitial_ad_manager.dart';
 import '../services/telemetry_service.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
 import '../widgets/app_dialogs.dart';
 import '../widgets/app_screen.dart';
 import '../widgets/banner_ad_widget.dart';
@@ -294,7 +296,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
       cancelLabel: l10n?.cancel ?? '취소',
       confirmLabel: l10n?.goBackButton ?? '뒤로 가기',
       variant: AppDialogVariant.warning,
-      confirmColor: Colors.deepPurple,
+      confirmColor: AppColors.accent(context),
     );
 
     if (confirmed && mounted) {
@@ -426,17 +428,49 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     }
   }
 
-  Color _getStateColor() {
+  Color _getStateColor(BuildContext context) {
     return _currentState == TimerState.focus
-        ? Colors.deepPurple
-        : Colors.blue.shade600;
+        ? AppColors.accent(context)
+        : AppColors.info;
+  }
+
+  /// 현재 구간에서 실제로 지난 비율. 진행 링이 이 값으로 채워진다.
+  double get _progress {
+    final total = _currentState == TimerState.focus
+        ? _originalFocusSeconds
+        : _originalBreakSeconds;
+    if (total <= 0) return 0;
+
+    final remaining = _remainingDuration.inMilliseconds.clamp(
+      0,
+      total * Duration.millisecondsPerSecond,
+    );
+    final elapsed = (total * Duration.millisecondsPerSecond) - remaining;
+    return (elapsed / (total * Duration.millisecondsPerSecond)).clamp(0.0, 1.0);
   }
 
   @override
   Widget build(BuildContext context) {
-    final stateColor = _getStateColor();
+    final stateColor = _getStateColor(context);
     final l10n = AppLocalizations.of(context);
 
+    // Android의 시스템 뒤로가기는 앱바 닫기 버튼을 숨겨도 항상 열려 있는
+    // 탈출구다. PopScope로 가로채 화면 안의 닫기 흐름과 동일하게 확인을 받는다.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _showBackDialog();
+      },
+      child: _buildScreen(context, stateColor, l10n),
+    );
+  }
+
+  Widget _buildScreen(
+    BuildContext context,
+    Color stateColor,
+    AppLocalizations? l10n,
+  ) {
     return AppScreen(
       automaticallyImplyLeading: !_isRunning,
       leading: _isRunning
@@ -447,28 +481,19 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
               child: Tooltip(
                 message: l10n?.closeTimerPage ?? 'Close timer page',
                 child: IconButton(
-                  icon: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.deepPurple.shade400,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
+                  icon: const Icon(Icons.close, size: 24),
+                  color: AppColors.onAppBar(context),
                   onPressed: _showBackDialog,
                 ),
               ),
             ),
       title: TimerHeaderContent(
         title: _getStateLabel(context),
-        subtitle: '${widget.focusMinutes} ${l10n?.seconds ?? 'seconds'}',
+        // focusMinutes 는 초 단위로 전달되므로 사람이 읽는 분 단위로 환산한다.
+        subtitle:
+            '${widget.focusMinutes ~/ 60} ${l10n?.minutes ?? 'minutes'}',
       ),
-      bodyPadding: const EdgeInsets.symmetric(horizontal: 24.0),
+      bodyPadding: AppSpacing.screenHorizontal,
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -479,20 +504,23 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
               timeLabel: _formatTime(_remainingSeconds),
               statusLabel: _getStatusText(context),
               isRunning: _isRunning,
+              progress: _progress,
               startLabel: l10n?.start ?? 'Start',
               stopLabel: l10n?.stop ?? 'Stop',
               resetLabel: l10n?.resetTimer ?? 'Reset timer',
+              progressSemanticsLabel:
+                  l10n?.translate('focusProgress') ?? 'Focus progress',
               onStart: _startTimer,
               onStop: _stopTimer,
               onReset: _resetTimer,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.lg),
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.0),
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
             child: BannerAdWidget(),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.lg),
         ],
       ),
     );
