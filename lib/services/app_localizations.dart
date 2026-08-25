@@ -144,6 +144,10 @@ class AppLocalizations {
       'privacyPolicy': 'Privacy Policy',
       'viewPrivacyPolicy': 'View our privacy policy',
       'couldNotOpenUrl': 'Could not open the privacy policy.',
+
+      // Ads
+      'adLoading': 'Loading ad...',
+      'adUnavailable': 'Ad unavailable',
     },
     'es': {
       // Navigation
@@ -278,6 +282,10 @@ class AppLocalizations {
       'privacyPolicy': 'Política de Privacidad',
       'viewPrivacyPolicy': 'Ver nuestra política de privacidad',
       'couldNotOpenUrl': 'No se pudo abrir la política de privacidad.',
+
+      // Ads
+      'adLoading': 'Cargando anuncio...',
+      'adUnavailable': 'Anuncio no disponible',
     },
     'zh': {
       // Navigation
@@ -403,6 +411,10 @@ class AppLocalizations {
       'privacyPolicy': '隐私政策',
       'viewPrivacyPolicy': '查看我们的隐私政策',
       'couldNotOpenUrl': '无法打开隐私政策。',
+
+      // Ads
+      'adLoading': '广告加载中...',
+      'adUnavailable': '广告不可用',
     },
   };
 
@@ -503,6 +515,8 @@ class AppLocalizations {
   String get privacyPolicy => translate('privacyPolicy');
   String get viewPrivacyPolicy => translate('viewPrivacyPolicy');
   String get couldNotOpenUrl => translate('couldNotOpenUrl');
+  String get adLoading => translate('adLoading');
+  String get adUnavailable => translate('adUnavailable');
 }
 
 class _AppLocalizationsDelegate

@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/ad_ids.dart';
-import '../services/banner_ad_retry_policy.dart';
+import '../services/ad_retry_policy.dart';
+import '../services/app_localizations.dart';
 import '../services/telemetry_service.dart';
+import '../theme/app_colors.dart';
 
 /// 배너 광고 위젯
 class BannerAdWidget extends StatefulWidget {
@@ -22,7 +24,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   int _lastRequestedWidth = 0;
   bool _hasRequestedForCurrentWidth = false;
   Timer? _retryTimer;
-  final _retryPolicy = BannerAdRetryPolicy();
+  final _retryPolicy = AdRetryPolicy.banner();
 
   @override
   void initState() {
@@ -60,8 +62,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
       'BannerAd load requested: unitId=$adUnitId width=$width retry=${_retryPolicy.retryCount} testAds=${AdIds.usingTestAds}',
     );
 
-    final adSize =
-        await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width);
+    final adSize = await AdSize.getLargeAnchoredAdaptiveBannerAdSize(width);
 
     if (!mounted) {
       _isLoading = false;
@@ -162,10 +163,11 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
         // 광고가 로드되지 않았어도 공간은 유지 (로딩 중 표시)
         if (!_isAdLoaded || _bannerAd == null) {
-          final message =
-              _retryPolicy.retryCount >= BannerAdRetryPolicy.maxRetries
-              ? '광고를 불러올 수 없습니다'
-              : '광고 로딩 중...';
+          final l10n = AppLocalizations.of(context);
+          final isExhausted = _retryPolicy.isExhausted;
+          final message = isExhausted
+              ? (l10n?.adUnavailable ?? 'Ad unavailable')
+              : (l10n?.adLoading ?? 'Loading ad...');
           final fallbackHeight =
               _bannerAd?.size.height.toDouble() ??
               AdSize.banner.height.toDouble();
@@ -175,18 +177,20 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
             width: double.infinity,
             height: fallbackHeight,
             decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              border: Border.all(color: Colors.grey.shade300, width: 1),
+              color: AppColors.surfaceMuted(context),
+              border: Border.all(
+                color: AppColors.subtleBorder(context),
+                width: 1,
+              ),
             ),
             child: Center(
               child: Text(
                 message,
                 style: TextStyle(
                   fontSize: 12,
-                  color:
-                      _retryPolicy.retryCount >= BannerAdRetryPolicy.maxRetries
-                      ? Colors.grey.shade600
-                      : Colors.grey,
+                  color: isExhausted
+                      ? AppColors.textMuted(context)
+                      : AppColors.textSecondary(context),
                 ),
               ),
             ),

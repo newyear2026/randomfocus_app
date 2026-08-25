@@ -8,7 +8,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'pages/home_page.dart';
-import 'pages/splash_page.dart';
+import 'services/ad_consent_service.dart';
 import 'services/language_service.dart';
 import 'services/app_localizations.dart';
 import 'services/interstitial_ad_manager.dart';
@@ -37,8 +37,11 @@ void main() async {
   // Google Mobile Ads 초기화 (웹이 아닐 때만)
   if (!kIsWeb) {
     try {
+      final canRequestAds = await AdConsentService.requestConsent();
       await MobileAds.instance.initialize();
-      InterstitialAdManager.instance.preload();
+      if (canRequestAds) {
+        InterstitialAdManager.instance.preload();
+      }
     } catch (error, stackTrace) {
       await TelemetryService.reportError(
         error,
@@ -119,12 +122,10 @@ class _MyAppState extends State<MyApp> {
       navigatorObservers: [
         FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
       ],
-      home: SplashPage(
-        child: AppUpdateNotice(
-          child: HomePage(
-            onLanguageChanged: _changeLanguage,
-            onThemeModeChanged: _changeThemeMode,
-          ),
+      home: AppUpdateNotice(
+        child: HomePage(
+          onLanguageChanged: _changeLanguage,
+          onThemeModeChanged: _changeThemeMode,
         ),
       ),
       debugShowCheckedModeBanner: false,

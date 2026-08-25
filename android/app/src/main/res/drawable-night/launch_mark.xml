@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="180dp"
+    android:height="180dp"
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+    <path android:fillColor="#211E26" android:pathData="M128,20 A108,108 0,1 1,127.99 20 Z" />
+    <path android:fillColor="@android:color/transparent" android:pathData="M128,20 A108,108 0,1 1,127.99 20 Z" android:strokeColor="#49454F" android:strokeWidth="2" />
+    <path android:fillColor="#B26A12" android:pathData="M128,128 L128,48 A80,80 0,0 1,197.282 88 Z" android:strokeColor="#211E26" android:strokeWidth="4" android:strokeLineJoin="round" />
+    <path android:fillColor="#A8393A" android:pathData="M128,128 L197.282,88 A80,80 0,0 1,197.282 168 Z" android:strokeColor="#211E26" android:strokeWidth="4" android:strokeLineJoin="round" />
+    <path android:fillColor="#0D7357" android:pathData="M128,128 L197.282,168 A80,80 0,0 1,128 208 Z" android:strokeColor="#211E26" android:strokeWidth="4" android:strokeLineJoin="round" />
+    <path android:fillColor="#4A4CB8" android:pathData="M128,128 L128,208 A80,80 0,0 1,58.718 168 Z" android:strokeColor="#211E26" android:strokeWidth="4" android:strokeLineJoin="round" />
+    <path android:fillColor="#2A5FA8" android:pathData="M128,128 L58.718,168 A80,80 0,0 1,58.718 88 Z" android:strokeColor="#211E26" android:strokeWidth="4" android:strokeLineJoin="round" />
+    <path android:fillColor="#A83571" android:pathData="M128,128 L58.718,88 A80,80 0,0 1,128 48 Z" android:strokeColor="#211E26" android:strokeWidth="4" android:strokeLineJoin="round" />
+    <path android:fillColor="@android:color/transparent" android:pathData="M128,48 A80,80 0,1 1,127.99 48 Z" android:strokeColor="#211E26" android:strokeWidth="6" />
+    <path android:fillColor="#211E26" android:pathData="M128,115 A13,13 0,1 1,127.99 115 Z" />
+    <path android:fillColor="#CFBCFF" android:pathData="M128,123 A5,5 0,1 1,127.99 123 Z" />
+    <path android:fillColor="#CFBCFF" android:pathData="M110,34 L146,34 Q151,34 148,40 L135,64 Q128,75 121,64 L108,40 Q105,34 110,34 Z" />
+</vector>
