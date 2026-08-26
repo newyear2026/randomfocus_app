@@ -158,4 +158,65 @@ void main() {
     expect(find.byType(AppSectionCard), findsNWidgets(3));
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('history date selection keeps calendar decorations compatible', (
+    tester,
+  ) async {
+    final today = DateTime.now();
+    SharedPreferences.setMockInitialValues({
+      'timer_history': jsonEncode([
+        TimerHistory(
+          sessionId: 'calendar-animation',
+          dateTime: today,
+          selectedTime: 25,
+          actualTime: 60,
+          status: SessionStatus.completed,
+        ).toJson(),
+      ]),
+    });
+
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    await tester.pumpWidget(
+      const MaterialApp(
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: [Locale('en'), Locale('es'), Locale('zh')],
+        home: HistoryPage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final lastDayOfMonth = DateTime(today.year, today.month + 1, 0).day;
+    final targetDays = [
+      for (var day = 1; day <= lastDayOfMonth; day++)
+        if (day != today.day) day,
+    ].take(2).toList();
+    final firstTargetCell = find.text('${targetDays.first}').first;
+    expect(firstTargetCell, findsOneWidget);
+
+    // 기본 셀에서 선택 셀로 바뀌는 애니메이션의 초반부를 검증한다.
+    await tester.tap(firstTargetCell);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    final secondTargetCell = find.text('${targetDays.last}').first;
+    expect(secondTargetCell, findsOneWidget);
+
+    // 이전 선택 셀이 기본 셀로 돌아가는 반대 방향의 후반부도 검증한다.
+    await tester.tap(secondTargetCell);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
 }

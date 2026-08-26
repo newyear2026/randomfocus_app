@@ -26,6 +26,14 @@ class _HistoryPageState extends State<HistoryPage> {
   /// 캘린더 한 행의 높이. 접근성 가이드의 최소 터치 타겟 48을 만족한다.
   static const double _calendarRowHeight = 48;
 
+  /// TableCalendar는 날짜 상태가 바뀔 때 BoxDecoration을 보간한다.
+  /// 모든 상태가 같은 shape을 사용해야 애니메이션 중간에 circle과
+  /// borderRadius가 함께 생기는 잘못된 장식을 만들지 않는다.
+  static const BoxDecoration _calendarCellDecoration = BoxDecoration(
+    shape: BoxShape.rectangle,
+    borderRadius: BorderRadius.all(Radius.circular(12)),
+  );
+
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
   final CalendarFormat _calendarFormat = CalendarFormat.month;
@@ -239,7 +247,8 @@ class _HistoryPageState extends State<HistoryPage> {
                           children: [
                             Expanded(
                               child: AppStatTile(
-                                label: l10n?.monthlyFocused ?? 'Monthly Focused',
+                                label:
+                                    l10n?.monthlyFocused ?? 'Monthly Focused',
                                 value: monthlyStats['totalHours'] > 0
                                     ? '${monthlyStats['totalHours']}h ${monthlyStats['totalMinutes']}m'
                                     : '${monthlyStats['totalMinutes']}m',
@@ -334,6 +343,14 @@ class _HistoryPageState extends State<HistoryPage> {
       calendarStyle: CalendarStyle(
         outsideDaysVisible: false,
         cellMargin: const EdgeInsets.all(4),
+        defaultDecoration: _calendarCellDecoration,
+        weekendDecoration: _calendarCellDecoration,
+        outsideDecoration: _calendarCellDecoration,
+        disabledDecoration: _calendarCellDecoration,
+        holidayDecoration: _calendarCellDecoration,
+        withinRangeDecoration: _calendarCellDecoration,
+        rangeStartDecoration: _calendarCellDecoration.copyWith(color: accent),
+        rangeEndDecoration: _calendarCellDecoration.copyWith(color: accent),
         weekendTextStyle: TextStyle(
           color: AppColors.textMuted(context),
           fontSize: 14,
@@ -342,18 +359,14 @@ class _HistoryPageState extends State<HistoryPage> {
           color: AppColors.textPrimary(context),
           fontSize: 14,
         ),
-        selectedDecoration: BoxDecoration(
-          color: accent,
-          borderRadius: BorderRadius.circular(12),
-        ),
+        selectedDecoration: _calendarCellDecoration.copyWith(color: accent),
         selectedTextStyle: TextStyle(
           color: AppColors.onAccent(context),
           fontSize: 14,
           fontWeight: FontWeight.w600,
         ),
-        todayDecoration: BoxDecoration(
+        todayDecoration: _calendarCellDecoration.copyWith(
           color: accent.withValues(alpha: 0.14),
-          borderRadius: BorderRadius.circular(12),
         ),
         todayTextStyle: TextStyle(
           color: AppColors.accentStrong(context),
