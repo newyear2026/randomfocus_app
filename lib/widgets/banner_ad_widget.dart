@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../services/ad_consent_service.dart';
 import '../services/ad_ids.dart';
 import '../services/ad_retry_policy.dart';
 import '../services/app_localizations.dart';
@@ -10,6 +11,10 @@ import '../services/telemetry_service.dart';
 import '../theme/app_colors.dart';
 
 /// 배너 광고 위젯
+///
+/// 새 광고는 항상 뒤에서 먼저 로드하고, 로드가 끝난 뒤에만 화면의 광고와
+/// 교체한다. 그래서 재시도·크기 변경·자동 새로고침 중에도 이미 표시 중인
+/// 광고가 사라지지 않는다.
 class BannerAdWidget extends StatefulWidget {
   const BannerAdWidget({super.key});
 
@@ -17,25 +22,62 @@ class BannerAdWidget extends StatefulWidget {
   State<BannerAdWidget> createState() => _BannerAdWidgetState();
 }
 
-class _BannerAdWidgetState extends State<BannerAdWidget> {
-  BannerAd? _bannerAd;
-  bool _isAdLoaded = false;
+class _BannerAdWidgetState extends State<BannerAdWidget>
+    with WidgetsBindingObserver {
+  /// 콜백이 오지 않는 요청을 정리하기 위한 상한.
+  static const Duration _loadTimeout = Duration(seconds: 12);
+
+  /// 적응형 크기 조회가 지연될 때 표준 배너로 넘어가기 위한 상한.
+  static const Duration _sizeTimeout = Duration(seconds: 5);
+
+  /// 이 횟수만큼 실패하면 안내 문구를 "로딩 중"에서 "표시 불가"로 바꾼다.
+  /// 재시도 자체는 계속된다.
+  static const int _quietAfterRetries = 2;
+
+  /// 화면에 표시 중인 광고.
+  BannerAd? _visibleAd;
+
+  /// 로드 중인 다음 광고. 성공해야 _visibleAd와 교체된다.
+  BannerAd? _pendingAd;
+
+  /// 표시 중인 광고와 로드 중인 광고가 각각 어떤 폭으로 요청됐는지 기억한다.
+  int _visibleWidth = 0;
+  int _pendingWidth = 0;
+
   bool _isLoading = false;
   int _lastRequestedWidth = 0;
   bool _hasRequestedForCurrentWidth = false;
   Timer? _retryTimer;
+  Timer? _loadTimeoutTimer;
   final _retryPolicy = AdRetryPolicy.banner();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) {
+      return;
+    }
+    if (_visibleAd != null || _isLoading || _lastRequestedWidth <= 0) {
+      return;
+    }
+
+    // 백그라운드에 있는 동안 네트워크가 복구됐을 수 있으므로
+    // 남은 대기 시간을 기다리지 않고 곧바로 다시 시도한다.
+    debugPrint('BannerAd retry on resume');
+    _cancelRetry();
+    _retryPolicy.reset();
+    _loadBannerAd(_lastRequestedWidth);
   }
 
   void _ensureBannerLoaded(int width) {
     if (!mounted || kIsWeb || width <= 0) return;
     if (_lastRequestedWidth != width) {
-      _retryTimer?.cancel();
-      _retryTimer = null;
+      _cancelRetry();
       _retryPolicy.reset();
       _lastRequestedWidth = width;
       _hasRequestedForCurrentWidth = false;
@@ -56,68 +98,40 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   Future<void> _loadBannerAd(int width) async {
     if (!mounted || kIsWeb || width <= 0 || _isLoading) return;
 
+    if (!AdConsentService.canRequestAds) {
+      debugPrint('BannerAd skipped: consent does not allow ad requests');
+      return;
+    }
+
     final adUnitId = AdIds.getBannerAdUnitId();
     _isLoading = true;
     debugPrint(
       'BannerAd load requested: unitId=$adUnitId width=$width retry=${_retryPolicy.retryCount} testAds=${AdIds.usingTestAds}',
     );
 
-    final adSize = await AdSize.getLargeAnchoredAdaptiveBannerAdSize(width);
+    final adaptiveSize = await AdSize.getLargeAnchoredAdaptiveBannerAdSize(
+      width,
+    ).timeout(_sizeTimeout, onTimeout: () => null);
 
     if (!mounted) {
       _isLoading = false;
       return;
     }
 
-    if (adSize == null) {
+    // 적응형 크기를 못 구해도 표준 배너로 요청해 빈 자리를 남기지 않는다.
+    final adSize = adaptiveSize ?? AdSize.banner;
+    if (adaptiveSize == null) {
       debugPrint('BannerAd adaptive size unavailable: width=$width');
-      _isLoading = false;
-      _scheduleRetry();
-      return;
     }
 
-    _bannerAd?.dispose();
-    _bannerAd = null;
-    _isAdLoaded = false;
-
-    _bannerAd = BannerAd(
+    final ad = BannerAd(
       adUnitId: adUnitId,
       size: adSize,
       request: const AdRequest(),
       listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          debugPrint('BannerAd loaded: unitId=${ad.adUnitId}');
-          _isLoading = false;
-          if (mounted) {
-            setState(() {
-              _isAdLoaded = true;
-            });
-            _retryTimer?.cancel();
-            _retryTimer = null;
-            _retryPolicy.reset();
-          }
-        },
-        onAdFailedToLoad: (ad, error) {
-          debugPrint(
-            'BannerAd failed to load: unitId=${ad.adUnitId} code=${error.code} message=${error.message}',
-          );
-          _isLoading = false;
-          ad.dispose();
-          TelemetryService.reportError(
-            error,
-            StackTrace.current,
-            reason: 'banner_ad_load',
-          );
-
-          if (mounted) {
-            setState(() {
-              _bannerAd = null;
-              _isAdLoaded = false;
-            });
-
-            _scheduleRetry();
-          }
-        },
+        onAdLoaded: (loadedAd) => _handleAdLoaded(loadedAd),
+        onAdFailedToLoad: (failedAd, error) =>
+            _handleAdFailedToLoad(failedAd, error),
         onAdOpened: (_) {
           debugPrint('BannerAd opened');
         },
@@ -125,7 +139,118 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
           debugPrint('BannerAd closed');
         },
       ),
-    )..load();
+    );
+
+    _pendingAd = ad;
+    _pendingWidth = width;
+    _startLoadTimeout();
+    ad.load();
+  }
+
+  void _handleAdLoaded(Ad ad) {
+    // 자동 새로고침으로 이미 표시 중인 광고가 다시 채워진 경우.
+    if (identical(ad, _visibleAd)) {
+      debugPrint('BannerAd refreshed: unitId=${ad.adUnitId}');
+      return;
+    }
+
+    // 타임아웃 등으로 이미 버린 요청의 뒤늦은 콜백.
+    if (!identical(ad, _pendingAd)) {
+      ad.dispose();
+      return;
+    }
+
+    _cancelLoadTimeout();
+    _isLoading = false;
+    _pendingAd = null;
+    final loadedWidth = _pendingWidth;
+
+    if (!mounted) {
+      ad.dispose();
+      return;
+    }
+
+    debugPrint('BannerAd loaded: unitId=${ad.adUnitId}');
+    final previousAd = _visibleAd;
+    setState(() {
+      _visibleAd = ad as BannerAd;
+      _visibleWidth = loadedWidth;
+    });
+
+    // 교체된 광고는 새 AdWidget이 화면에 올라간 뒤에 정리한다.
+    if (previousAd != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => previousAd.dispose());
+    }
+
+    _cancelRetry();
+    _retryPolicy.reset();
+
+    // 로드 중에 화면 폭이 바뀌었다면, 표시 중인 광고는 유지한 채
+    // 새 폭에 맞는 광고를 다시 요청한다.
+    if (_lastRequestedWidth > 0 && _lastRequestedWidth != _visibleWidth) {
+      _hasRequestedForCurrentWidth = false;
+      _loadBannerAd(_lastRequestedWidth);
+    }
+  }
+
+  void _handleAdFailedToLoad(Ad ad, LoadAdError error) {
+    if (!identical(ad, _pendingAd)) {
+      ad.dispose();
+      return;
+    }
+
+    debugPrint(
+      'BannerAd failed to load: unitId=${ad.adUnitId} code=${error.code} message=${error.message}',
+    );
+
+    _cancelLoadTimeout();
+    _isLoading = false;
+    _pendingAd = null;
+    ad.dispose();
+
+    TelemetryService.reportError(
+      error,
+      StackTrace.current,
+      reason: 'banner_ad_load',
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    // 표시 중인 광고는 그대로 두고 다음 시도만 예약한다.
+    setState(() {});
+    _scheduleRetry();
+  }
+
+  void _startLoadTimeout() {
+    _loadTimeoutTimer?.cancel();
+    _loadTimeoutTimer = Timer(_loadTimeout, () {
+      _loadTimeoutTimer = null;
+      final stalledAd = _pendingAd;
+      if (stalledAd == null || !_isLoading) {
+        return;
+      }
+
+      debugPrint(
+        'BannerAd load timed out after ${_loadTimeout.inSeconds}s: width=$_lastRequestedWidth',
+      );
+      _pendingAd = null;
+      _isLoading = false;
+      stalledAd.dispose();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {});
+      _scheduleRetry();
+    });
+  }
+
+  void _cancelLoadTimeout() {
+    _loadTimeoutTimer?.cancel();
+    _loadTimeoutTimer = null;
   }
 
   void _scheduleRetry() {
@@ -141,16 +266,24 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
     _retryTimer = Timer(retryDelay, () {
       _retryTimer = null;
       _retryPolicy.beginScheduledRetry();
-      if (mounted && !_isAdLoaded && _lastRequestedWidth > 0) {
+      if (mounted && _lastRequestedWidth > 0) {
         _loadBannerAd(_lastRequestedWidth);
       }
     });
   }
 
+  void _cancelRetry() {
+    _retryTimer?.cancel();
+    _retryTimer = null;
+  }
+
   @override
   void dispose() {
-    _retryTimer?.cancel();
-    _bannerAd?.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    _cancelRetry();
+    _cancelLoadTimeout();
+    _pendingAd?.dispose();
+    _visibleAd?.dispose();
     super.dispose();
   }
 
@@ -161,47 +294,45 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
         final width = constraints.maxWidth.truncate();
         _ensureBannerLoaded(width);
 
-        // 광고가 로드되지 않았어도 공간은 유지 (로딩 중 표시)
-        if (!_isAdLoaded || _bannerAd == null) {
-          final l10n = AppLocalizations.of(context);
-          final isExhausted = _retryPolicy.isExhausted;
-          final message = isExhausted
-              ? (l10n?.adUnavailable ?? 'Ad unavailable')
-              : (l10n?.adLoading ?? 'Loading ad...');
-          final fallbackHeight =
-              _bannerAd?.size.height.toDouble() ??
-              AdSize.banner.height.toDouble();
-
+        final visibleAd = _visibleAd;
+        if (visibleAd != null) {
           return Container(
             alignment: Alignment.center,
             width: double.infinity,
-            height: fallbackHeight,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceMuted(context),
-              border: Border.all(
-                color: AppColors.subtleBorder(context),
-                width: 1,
-              ),
-            ),
-            child: Center(
-              child: Text(
-                message,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isExhausted
-                      ? AppColors.textMuted(context)
-                      : AppColors.textSecondary(context),
-                ),
-              ),
-            ),
+            height: visibleAd.size.height.toDouble(),
+            child: AdWidget(key: ObjectKey(visibleAd), ad: visibleAd),
           );
         }
+
+        // 첫 광고가 채워지기 전까지만 자리를 유지한다.
+        final l10n = AppLocalizations.of(context);
+        final isQuiet = _retryPolicy.retryCount >= _quietAfterRetries;
+        final message = isQuiet
+            ? (l10n?.adUnavailable ?? 'Ad unavailable')
+            : (l10n?.adLoading ?? 'Loading ad...');
+        final fallbackHeight =
+            _pendingAd?.size.height.toDouble() ??
+            AdSize.banner.height.toDouble();
 
         return Container(
           alignment: Alignment.center,
           width: double.infinity,
-          height: _bannerAd!.size.height.toDouble(),
-          child: AdWidget(ad: _bannerAd!),
+          height: fallbackHeight,
+          decoration: BoxDecoration(
+            color: AppColors.surfaceMuted(context),
+            border: Border.all(color: AppColors.subtleBorder(context), width: 1),
+          ),
+          child: Center(
+            child: Text(
+              message,
+              style: TextStyle(
+                fontSize: 12,
+                color: isQuiet
+                    ? AppColors.textMuted(context)
+                    : AppColors.textSecondary(context),
+              ),
+            ),
+          ),
         );
       },
     );

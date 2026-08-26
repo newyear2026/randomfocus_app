@@ -5,10 +5,18 @@ class AdRetryPolicy {
   AdRetryPolicy({
     this.maxRetries = defaultMaxRetries,
     this.baseDelay = defaultBaseDelay,
+    this.maxDelay = defaultMaxDelay,
   });
 
-  /// 배너처럼 화면에 머무는 광고는 넉넉한 간격으로 재시도한다.
-  factory AdRetryPolicy.banner() => AdRetryPolicy();
+  /// 배너는 화면에 계속 머무르므로 짧은 간격으로 무제한 재시도한다.
+  ///
+  /// 노필(no fill)은 정상적인 응답이라 언젠가는 채워지므로,
+  /// 재시도를 포기해 빈 자리를 남기는 대신 상한(1분) 간격으로 계속 시도한다.
+  factory AdRetryPolicy.banner() => AdRetryPolicy(
+    maxRetries: null,
+    baseDelay: const Duration(seconds: 6),
+    maxDelay: const Duration(seconds: 60),
+  );
 
   /// 전면 광고는 사용자가 화면을 벗어나기 전에 준비되어야 하므로
   /// 더 짧은 간격으로 재시도한다.
@@ -17,16 +25,22 @@ class AdRetryPolicy {
 
   static const int defaultMaxRetries = 5;
   static const Duration defaultBaseDelay = Duration(seconds: 30);
+  static const Duration defaultMaxDelay = Duration(minutes: 8);
 
-  final int maxRetries;
+  /// null이면 재시도 횟수를 제한하지 않는다.
+  final int? maxRetries;
   final Duration baseDelay;
+  final Duration maxDelay;
 
   int _retryCount = 0;
   bool _isRetryScheduled = false;
 
   int get retryCount => _retryCount;
   bool get isRetryScheduled => _isRetryScheduled;
-  bool get isExhausted => _retryCount >= maxRetries;
+  bool get isExhausted {
+    final limit = maxRetries;
+    return limit != null && _retryCount >= limit;
+  }
 
   /// 다음 재시도를 예약하고, 예약할 수 없으면 null을 반환한다.
   Duration? scheduleRetry() {
@@ -36,7 +50,14 @@ class AdRetryPolicy {
 
     _isRetryScheduled = true;
     _retryCount++;
-    return baseDelay * (1 << (_retryCount - 1));
+
+    final exponent = _retryCount - 1;
+    if (exponent >= 32) {
+      return maxDelay;
+    }
+
+    final delay = baseDelay * (1 << exponent);
+    return delay > maxDelay ? maxDelay : delay;
   }
 
   /// 예약된 재시도가 실행되기 시작했음을 표시한다.

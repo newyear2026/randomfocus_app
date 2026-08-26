@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
+import 'package:flutter/foundation.dart'
+    show debugPrint, kIsWeb, visibleForTesting;
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import 'telemetry_service.dart';
@@ -16,6 +17,17 @@ class AdConsentService {
   /// 동의 정보 갱신이 지연될 때 광고 초기화를 막지 않기 위한 상한.
   static const Duration _timeout = Duration(seconds: 8);
 
+  static bool _canRequestAds = true;
+
+  /// 마지막 동의 확인 결과. 동의 흐름이 끝나기 전에는 true로 취급해
+  /// 규제 지역이 아닌 사용자의 광고 요청이 지연되지 않게 한다.
+  static bool get canRequestAds => _canRequestAds;
+
+  @visibleForTesting
+  static void setCanRequestAdsForTesting(bool value) {
+    _canRequestAds = value;
+  }
+
   /// 동의 흐름을 실행하고, 광고를 요청할 수 있는지 여부를 반환한다.
   ///
   /// 네트워크 오류 등으로 동의 상태를 확인하지 못하면 true를 반환해
@@ -28,9 +40,11 @@ class AdConsentService {
     try {
       await _updateConsentInfo().timeout(_timeout);
       await _showFormIfRequired().timeout(_timeout);
-      return await ConsentInformation.instance.canRequestAds();
+      _canRequestAds = await ConsentInformation.instance.canRequestAds();
+      return _canRequestAds;
     } on TimeoutException {
       debugPrint('AdConsent: timed out, falling back to ad request');
+      _canRequestAds = true;
       return true;
     } catch (error, stackTrace) {
       await TelemetryService.reportError(
@@ -38,6 +52,7 @@ class AdConsentService {
         stackTrace,
         reason: 'ad_consent_request',
       );
+      _canRequestAds = true;
       return true;
     }
   }
@@ -84,6 +99,7 @@ class AdConsentService {
 
     try {
       await completer.future.timeout(_timeout);
+      _canRequestAds = await ConsentInformation.instance.canRequestAds();
     } on TimeoutException {
       debugPrint('AdConsent: privacy options form timed out');
     }
