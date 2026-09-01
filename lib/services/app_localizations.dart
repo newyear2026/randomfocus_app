@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../models/app_language.dart';
+
 class AppLocalizations {
   final Locale locale;
 
@@ -86,6 +88,8 @@ class AppLocalizations {
       'gotIt': 'Got it',
       'close': 'Close',
       'selectLanguage': 'Select Language',
+      'languageSystem': 'System default',
+      'languageSystemDesc': 'Follow your device language',
       'appTitle': 'RandomFocus',
       'appVersion': 'Version 1.0.0',
       'version': 'Version',
@@ -223,6 +227,8 @@ class AppLocalizations {
       'gotIt': 'Entendido',
       'close': 'Cerrar',
       'selectLanguage': 'Seleccionar Idioma',
+      'languageSystem': 'Predeterminado del sistema',
+      'languageSystemDesc': 'Seguir el idioma del dispositivo',
       'appTitle': 'RandomFocus',
       'appVersion': 'Versión 1.0.0',
       'version': 'Versión',
@@ -360,6 +366,8 @@ class AppLocalizations {
       'gotIt': '知道了',
       'close': '关闭',
       'selectLanguage': '选择语言',
+      'languageSystem': '跟随系统',
+      'languageSystemDesc': '使用设备的语言',
       'appTitle': 'RandomFocus',
       'appVersion': '版本 1.0.0',
       'version': '版本',
@@ -487,6 +495,8 @@ class AppLocalizations {
   String get gotIt => translate('gotIt');
   String get close => translate('close');
   String get selectLanguage => translate('selectLanguage');
+  String get languageSystem => translate('languageSystem');
+  String get languageSystemDesc => translate('languageSystemDesc');
   String get appTitle => translate('appTitle');
   String get appVersion => translate('appVersion');
   String get appDescription => translate('appDescription');
@@ -525,7 +535,11 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) {
-    return ['en', 'es', 'zh'].contains(locale.languageCode);
+    // 지원 목록은 AppLanguage 한 곳에만 둔다 — 여기에 코드를 또 적으면
+    // 언어를 추가할 때 한쪽만 고쳐 번역이 통째로 빠진다.
+    return AppLanguage.supportedLocales.any(
+      (supported) => supported.languageCode == locale.languageCode,
+    );
   }
 
   @override

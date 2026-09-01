@@ -22,8 +22,7 @@ class BannerAdWidget extends StatefulWidget {
   State<BannerAdWidget> createState() => _BannerAdWidgetState();
 }
 
-class _BannerAdWidgetState extends State<BannerAdWidget>
-    with WidgetsBindingObserver {
+class _BannerAdWidgetState extends State<BannerAdWidget> {
   /// 콜백이 오지 않는 요청을 정리하기 위한 상한.
   static const Duration _loadTimeout = Duration(seconds: 12);
 
@@ -31,7 +30,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget>
   static const Duration _sizeTimeout = Duration(seconds: 5);
 
   /// 이 횟수만큼 실패하면 안내 문구를 "로딩 중"에서 "표시 불가"로 바꾼다.
-  /// 재시도 자체는 계속된다.
+  /// 제한된 마지막 재시도 이후에는 추가 요청 없이 이 상태를 유지한다.
   static const int _quietAfterRetries = 2;
 
   /// 화면에 표시 중인 광고.
@@ -50,29 +49,6 @@ class _BannerAdWidgetState extends State<BannerAdWidget>
   Timer? _retryTimer;
   Timer? _loadTimeoutTimer;
   final _retryPolicy = AdRetryPolicy.banner();
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed) {
-      return;
-    }
-    if (_visibleAd != null || _isLoading || _lastRequestedWidth <= 0) {
-      return;
-    }
-
-    // 백그라운드에 있는 동안 네트워크가 복구됐을 수 있으므로
-    // 남은 대기 시간을 기다리지 않고 곧바로 다시 시도한다.
-    debugPrint('BannerAd retry on resume');
-    _cancelRetry();
-    _retryPolicy.reset();
-    _loadBannerAd(_lastRequestedWidth);
-  }
 
   void _ensureBannerLoaded(int width) {
     if (!mounted || kIsWeb || width <= 0) return;
@@ -279,7 +255,6 @@ class _BannerAdWidgetState extends State<BannerAdWidget>
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _cancelRetry();
     _cancelLoadTimeout();
     _pendingAd?.dispose();

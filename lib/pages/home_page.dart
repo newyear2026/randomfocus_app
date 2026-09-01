@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'roulette_page.dart';
 import 'history_page.dart';
 import 'settings_page.dart';
+import '../models/app_language.dart';
 import '../services/app_localizations.dart';
 import '../widgets/app_bottom_navigation_bar.dart';
 
 class HomePage extends StatefulWidget {
-  final Function(Locale)? onLanguageChanged;
+  final Function(AppLanguage)? onLanguageChanged;
   final Function(ThemeMode)? onThemeModeChanged;
 
   const HomePage({

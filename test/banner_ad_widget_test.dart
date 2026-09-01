@@ -148,8 +148,8 @@ void main() {
     expect(find.text('Loading ad...'), findsOneWidget);
     expect(platform.loadedAdIds, hasLength(1));
 
-    // 첫 재시도는 6초 뒤.
-    await tester.pump(const Duration(seconds: 5));
+    // 첫 재시도는 2분 뒤.
+    await tester.pump(const Duration(minutes: 1, seconds: 59));
     expect(platform.loadedAdIds, hasLength(1));
 
     await tester.pump(const Duration(seconds: 1));
@@ -224,7 +224,7 @@ void main() {
     await tester.pump();
     expect(platform.disposedAdIds, contains(stalledAdId));
 
-    await tester.pump(const Duration(seconds: 6));
+    await tester.pump(const Duration(minutes: 2));
     await settleRequest(tester);
     expect(platform.loadedAdIds, hasLength(2));
   });
@@ -245,7 +245,7 @@ void main() {
     expect(find.byType(AdWidget), findsOneWidget);
   });
 
-  testWidgets('retries immediately when the app returns to the foreground', (
+  testWidgets('does not bypass the retry delay when the app resumes', (
     tester,
   ) async {
     await tester.pumpWidget(hostWithWidth(320));
@@ -265,7 +265,13 @@ void main() {
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await settleRequest(tester);
 
-    // 남은 백오프를 기다리지 않고 바로 다시 요청한다.
+    // 앱 복귀는 예약된 백오프를 초기화하지 않는다.
+    expect(platform.loadedAdIds, hasLength(1));
+
+    await tester.pump(const Duration(minutes: 2));
+    await settleRequest(tester);
+
+    // 원래 예약된 시간이 지난 뒤에만 다시 요청한다.
     expect(platform.loadedAdIds, hasLength(2));
   });
 

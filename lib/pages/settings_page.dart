@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../models/app_language.dart';
 import '../services/language_service.dart';
 import '../services/app_localizations.dart';
 import '../services/app_version_service.dart';
@@ -20,7 +21,7 @@ import '../widgets/app_update_notice.dart';
 import 'icon_preview_page.dart';
 
 class SettingsPage extends StatefulWidget {
-  final Function(Locale)? onLanguageChanged;
+  final Function(AppLanguage)? onLanguageChanged;
   final Function(ThemeMode)? onThemeModeChanged;
   final Future<AppVersion> Function() versionLoader;
 
@@ -37,7 +38,7 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   final ScrollController _scrollController = ScrollController();
-  String _currentLanguage = 'en';
+  AppLanguage _currentLanguage = AppLanguage.system;
   ThemeMode _currentThemeMode = ThemeMode.system;
   AppVersion? _appVersion;
 
@@ -63,6 +64,16 @@ class _SettingsPageState extends State<SettingsPage> {
         _currentLanguage = language;
       });
     }
+  }
+
+  /// 선택지에 보여줄 이름. 실제 언어는 그 언어 자체로 적고,
+  /// '기기 설정 따르기'만 번역한다.
+  String _languageLabel(BuildContext context, AppLanguage language) {
+    if (language != AppLanguage.system) {
+      return language.nativeName!;
+    }
+    final l10n = AppLocalizations.of(context);
+    return l10n?.languageSystem ?? 'System default';
   }
 
   Future<void> _loadCurrentThemeMode() async {
@@ -101,21 +112,23 @@ class _SettingsPageState extends State<SettingsPage> {
       variant: AppDialogVariant.info,
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: LanguageService.supportedLocales.map((locale) {
-          final languageCode = locale.languageCode;
-          final languageName =
-              LanguageService.languageNames[languageCode] ?? languageCode;
-          final isSelected = _currentLanguage == languageCode;
+        children: AppLanguage.values.map((language) {
+          final isSelected = _currentLanguage == language;
+          // '기기 설정 따르기'는 골라 둔 상태에서도 무엇을 뜻하는지 설명이
+          // 필요하다. 선택 여부는 라디오·체크 아이콘이 이미 보여준다.
+          final subtitle = language == AppLanguage.system
+              ? (l10n?.languageSystemDesc ?? 'Follow your device language')
+              : (isSelected
+                    ? (l10n?.selectedOption ?? 'Selected')
+                    : (l10n?.tapToSelect ?? 'Tap to choose'));
 
           return AppBottomSheetOptionTile(
-            title: languageName,
+            title: _languageLabel(context, language),
             selected: isSelected,
-            subtitle: isSelected
-                ? (l10n?.selectedOption ?? 'Selected')
-                : (l10n?.tapToSelect ?? 'Tap to choose'),
+            subtitle: subtitle,
             onTap: () async {
               Navigator.pop(context);
-              await _changeLanguage(languageCode);
+              await _changeLanguage(language);
             },
           );
         }).toList(),
@@ -152,11 +165,10 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Future<void> _changeLanguage(String selectedLanguage) async {
+  Future<void> _changeLanguage(AppLanguage selectedLanguage) async {
     if (selectedLanguage == _currentLanguage) return;
 
     final l10n = AppLocalizations.of(context);
-    final locale = Locale(selectedLanguage);
     await LanguageService.saveLanguage(selectedLanguage);
 
     if (mounted) {
@@ -165,7 +177,7 @@ class _SettingsPageState extends State<SettingsPage> {
       });
 
       if (widget.onLanguageChanged != null) {
-        widget.onLanguageChanged!(locale);
+        widget.onLanguageChanged!(selectedLanguage);
       }
 
       showAppSnackBar(
@@ -307,8 +319,7 @@ class _SettingsPageState extends State<SettingsPage> {
               grouped: true,
               icon: Icons.language,
               title: l10n?.language ?? 'Language',
-              subtitle:
-                  LanguageService.languageNames[_currentLanguage] ?? 'English',
+              subtitle: _languageLabel(context, _currentLanguage),
               onTap: _showLanguageSheet,
             ),
             AppInfoTile(

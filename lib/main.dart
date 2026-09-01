@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'models/app_language.dart';
 import 'pages/home_page.dart';
 import 'services/ad_consent_service.dart';
 import 'services/language_service.dart';
@@ -51,50 +52,39 @@ void main() async {
     }
   }
 
-  runApp(const MyApp());
+  // 언어와 테마는 첫 프레임 전에 읽는다. 나중에 읽으면 앱이 기본값으로 한 번
+  // 그려졌다가 사용자가 고른 값으로 바뀌어 화면이 깜빡인다.
+  final initialLanguage = await LanguageService.getSavedLanguage();
+  final initialThemeMode = await ThemeService.getSavedThemeMode();
+
+  runApp(
+    MyApp(initialLanguage: initialLanguage, initialThemeMode: initialThemeMode),
+  );
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  const MyApp({
+    super.key,
+    this.initialLanguage = AppLanguage.system,
+    this.initialThemeMode = ThemeMode.system,
+  });
+
+  final AppLanguage initialLanguage;
+  final ThemeMode initialThemeMode;
 
   @override
   State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-  Locale _locale = const Locale('en');
-  ThemeMode _themeMode = ThemeMode.system;
+  late AppLanguage _language = widget.initialLanguage;
+  late ThemeMode _themeMode = widget.initialThemeMode;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadSavedLanguage();
-    _loadSavedThemeMode();
-  }
-
-  Future<void> _loadSavedLanguage() async {
-    final savedLocale = await LanguageService.getSavedLocale();
-    if (mounted) {
-      setState(() {
-        _locale = savedLocale;
-      });
-    }
-  }
-
-  Future<void> _loadSavedThemeMode() async {
-    final savedMode = await ThemeService.getSavedThemeMode();
-    if (mounted) {
-      setState(() {
-        _themeMode = savedMode;
-      });
-    }
-  }
-
-  void _changeLanguage(Locale locale) {
+  void _changeLanguage(AppLanguage language) {
     setState(() {
-      _locale = locale;
+      _language = language;
     });
-    LanguageService.saveLanguage(locale.languageCode);
+    // 저장은 설정 화면에서 이미 끝났다. 여기서는 화면만 다시 그린다.
   }
 
   void _changeThemeMode(ThemeMode mode) {
@@ -108,7 +98,9 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'RandomFocus',
-      locale: _locale,
+      // null이면 Flutter가 기기 언어를 supportedLocales와 맞춰 고른다.
+      // 설정에서 언어를 고른 경우에만 값이 온다.
+      locale: _language.locale,
       supportedLocales: LanguageService.supportedLocales,
       localizationsDelegates: [
         AppLocalizations.delegate,

@@ -8,14 +8,14 @@ class AdRetryPolicy {
     this.maxDelay = defaultMaxDelay,
   });
 
-  /// 배너는 화면에 계속 머무르므로 짧은 간격으로 무제한 재시도한다.
+  /// 배너는 초기 로드가 실패했을 때만 제한적으로 다시 시도한다.
   ///
-  /// 노필(no fill)은 정상적인 응답이라 언젠가는 채워지므로,
-  /// 재시도를 포기해 빈 자리를 남기는 대신 상한(1분) 간격으로 계속 시도한다.
+  /// 배너 SDK가 로드 성공 후 자동 새로고침을 담당하므로, 앱에서 짧은 간격으로
+  /// 무제한 재요청하지 않는다. 한 타이머 세션에서는 최대 두 번만 재시도한다.
   factory AdRetryPolicy.banner() => AdRetryPolicy(
-    maxRetries: null,
-    baseDelay: const Duration(seconds: 6),
-    maxDelay: const Duration(seconds: 60),
+    maxRetries: 2,
+    baseDelay: const Duration(minutes: 2),
+    maxDelay: const Duration(minutes: 4),
   );
 
   /// 전면 광고는 사용자가 화면을 벗어나기 전에 준비되어야 하므로
