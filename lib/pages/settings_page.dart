@@ -244,7 +244,9 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _showPrivacyPolicySheet() async {
-    const privacyPolicyUrl = 'https://your-website.com/privacy-policy';
+    const privacyPolicyUrl =
+        'https://docs.google.com/document/d/e/'
+        '2PACX-1vShowtzVPBEdPtpYgWt0oFfhj0yz2BTL6Nb0n3NHavgb0giAcQA2TbT4nnL3mEk1ayjrLqHxf1egHqh/pub';
     final l10n = AppLocalizations.of(context);
 
     await showAppBottomSheet<void>(
