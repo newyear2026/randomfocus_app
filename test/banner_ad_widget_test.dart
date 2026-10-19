@@ -102,6 +102,32 @@ void main() {
     );
   }
 
+  Widget hostWithTrigger(double width, Listenable trigger) {
+    return MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: SizedBox(
+            width: width,
+            child: BannerAdWidget(retryTrigger: trigger),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// const 인스턴스는 같은 객체라 Flutter가 리빌드를 건너뛴다. 탭 전환처럼
+  /// State는 유지한 채 build만 다시 도는 상황을 만들려면 새 인스턴스를 쓴다.
+  Widget rebuiltHostWithWidth(double width) {
+    return MaterialApp(
+      home: Scaffold(
+        body: Center(
+          // ignore: prefer_const_constructors
+          child: SizedBox(width: width, child: BannerAdWidget()),
+        ),
+      ),
+    );
+  }
+
   /// 화면에 실제로 붙어 있는 광고의 adId.
   int? visibleAdId(WidgetTester tester) {
     final adWidgets = tester.widgetList<AdWidget>(find.byType(AdWidget));
@@ -116,6 +142,21 @@ void main() {
     await tester.pump();
     await tester.pump();
     await tester.pump();
+  }
+
+  /// 제한된 재시도를 모두 소진시킨다.
+  Future<void> exhaustRetries(WidgetTester tester) async {
+    await platform.emitFailedToLoad(platform.lastAdId);
+    await tester.pump(const Duration(minutes: 2));
+    await settleRequest(tester);
+
+    await platform.emitFailedToLoad(platform.lastAdId);
+    await tester.pump(const Duration(minutes: 4));
+    await settleRequest(tester);
+
+    await platform.emitFailedToLoad(platform.lastAdId);
+    await tester.pump(const Duration(minutes: 10));
+    await settleRequest(tester);
   }
 
   testWidgets('shows the ad and drops the placeholder once loaded', (
@@ -285,5 +326,101 @@ void main() {
 
     expect(platform.loadedAdIds, isEmpty);
     expect(find.byType(AdWidget), findsNothing);
+    // 영구히 "로딩 중"으로 남겨두지 않는다.
+    expect(find.text('Ad unavailable'), findsOneWidget);
+  });
+
+  testWidgets('requests an ad once consent becomes available', (tester) async {
+    AdConsentService.setCanRequestAdsForTesting(false);
+
+    await tester.pumpWidget(hostWithWidth(320));
+    await settleRequest(tester);
+    expect(platform.loadedAdIds, isEmpty);
+
+    // 설정 화면에서 동의를 허용하고 타이머 탭으로 돌아오면 build가 다시 돈다.
+    AdConsentService.setCanRequestAdsForTesting(true);
+    await tester.pumpWidget(rebuiltHostWithWidth(320));
+    await settleRequest(tester);
+
+    expect(platform.loadedAdIds, hasLength(1));
+  });
+
+  testWidgets('keeps the banner alive when an auto-refresh fails', (
+    tester,
+  ) async {
+    await tester.pumpWidget(hostWithWidth(320));
+    await settleRequest(tester);
+    await platform.emitLoaded(platform.lastAdId);
+    await tester.pump();
+
+    final adId = platform.lastAdId;
+    expect(visibleAdId(tester), adId);
+
+    // SDK 자동 새로고침이 실패하면 표시 중인 광고와 같은 인스턴스로
+    // onAdFailedToLoad가 온다.
+    await platform.emitFailedToLoad(adId);
+    await tester.pump();
+
+    // 표시 중인 광고를 버리면 화면이 빈 자리로 남는다.
+    expect(platform.disposedAdIds, isNot(contains(adId)));
+    expect(visibleAdId(tester), adId);
+  });
+
+  testWidgets('stops requesting once the retry budget is spent', (
+    tester,
+  ) async {
+    await tester.pumpWidget(hostWithWidth(320));
+    await settleRequest(tester);
+    await exhaustRetries(tester);
+
+    // 최초 1회 + 재시도 2회로 끝난다.
+    expect(platform.loadedAdIds, hasLength(3));
+    expect(find.text('Ad unavailable'), findsOneWidget);
+  });
+
+  testWidgets('requests again when the timer start refreshes the budget', (
+    tester,
+  ) async {
+    final trigger = ValueNotifier<int>(0);
+    addTearDown(trigger.dispose);
+
+    await tester.pumpWidget(hostWithTrigger(320, trigger));
+    await settleRequest(tester);
+    await exhaustRetries(tester);
+    expect(platform.loadedAdIds, hasLength(3));
+
+    // 타이머 시작 신호로 예산을 다시 받는다.
+    trigger.value++;
+    await settleRequest(tester);
+
+    expect(platform.loadedAdIds, hasLength(4));
+    // 문구도 "로딩 중"으로 되돌아간다.
+    expect(find.text('Loading ad...'), findsOneWidget);
+
+    // 새 예산으로 재시도도 다시 두 번까지 가능하다.
+    await exhaustRetries(tester);
+    expect(platform.loadedAdIds, hasLength(6));
+  });
+
+  testWidgets('leaves a showing ad alone when the budget refreshes', (
+    tester,
+  ) async {
+    final trigger = ValueNotifier<int>(0);
+    addTearDown(trigger.dispose);
+
+    await tester.pumpWidget(hostWithTrigger(320, trigger));
+    await settleRequest(tester);
+    await platform.emitLoaded(platform.lastAdId);
+    await tester.pump();
+
+    final adId = platform.lastAdId;
+
+    trigger.value++;
+    await settleRequest(tester);
+
+    // 새로고침은 SDK가 맡으므로 중복 요청하지 않는다.
+    expect(platform.loadedAdIds, hasLength(1));
+    expect(visibleAdId(tester), adId);
+    expect(platform.disposedAdIds, isNot(contains(adId)));
   });
 }

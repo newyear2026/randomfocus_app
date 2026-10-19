@@ -16,7 +16,14 @@ import '../theme/app_colors.dart';
 /// 교체한다. 그래서 재시도·크기 변경·자동 새로고침 중에도 이미 표시 중인
 /// 광고가 사라지지 않는다.
 class BannerAdWidget extends StatefulWidget {
-  const BannerAdWidget({super.key});
+  const BannerAdWidget({super.key, this.retryTrigger});
+
+  /// 제한된 재시도를 모두 쓴 뒤 다시 기회를 주는 신호.
+  ///
+  /// 재시도 횟수가 제한되어 있어서, 초기 로드가 연달아 실패하면 앱을 다시
+  /// 켜기 전까지 배너가 비어 있게 된다. 타이머 시작처럼 사용자가 화면을
+  /// 다시 쓰기 시작하는 시점에 이 신호를 보내면 예산을 새로 받는다.
+  final Listenable? retryTrigger;
 
   @override
   State<BannerAdWidget> createState() => _BannerAdWidgetState();
@@ -44,11 +51,47 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   int _pendingWidth = 0;
 
   bool _isLoading = false;
+
+  /// 동의가 없어 요청을 보류한 상태. 안내 문구를 "표시 불가"로 바꾸고,
+  /// 동의가 생기면 다음 빌드에서 다시 요청하기 위한 표시다.
+  bool _consentBlocked = false;
   int _lastRequestedWidth = 0;
   bool _hasRequestedForCurrentWidth = false;
   Timer? _retryTimer;
   Timer? _loadTimeoutTimer;
   final _retryPolicy = AdRetryPolicy.banner();
+
+  @override
+  void initState() {
+    super.initState();
+    widget.retryTrigger?.addListener(_handleRetryTrigger);
+  }
+
+  @override
+  void didUpdateWidget(BannerAdWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.retryTrigger != widget.retryTrigger) {
+      oldWidget.retryTrigger?.removeListener(_handleRetryTrigger);
+      widget.retryTrigger?.addListener(_handleRetryTrigger);
+    }
+  }
+
+  /// 재시도 예산을 되돌리고 즉시 한 번 더 요청한다.
+  ///
+  /// 광고가 이미 떠 있으면 새로고침은 SDK가 맡으므로 아무것도 하지 않는다.
+  void _handleRetryTrigger() {
+    if (!mounted || kIsWeb) return;
+    if (_visibleAd != null || _isLoading) return;
+    if (_lastRequestedWidth <= 0) return;
+
+    debugPrint('BannerAd retry budget refreshed: width=$_lastRequestedWidth');
+    _cancelRetry();
+    _retryPolicy.reset();
+
+    // 안내 문구를 "표시 불가"에서 "로딩 중"으로 되돌린다.
+    setState(() {});
+    _loadBannerAd(_lastRequestedWidth);
+  }
 
   void _ensureBannerLoaded(int width) {
     if (!mounted || kIsWeb || width <= 0) return;
@@ -62,6 +105,15 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
     if (_isLoading || _hasRequestedForCurrentWidth) {
       return;
     }
+
+    // 동의가 없으면 요청 플래그를 세우지 않는다. 그래야 설정 화면에서 동의를
+    // 바꾼 뒤 다음 빌드에서 다시 요청할 수 있다. build 중이므로 setState 없이
+    // 값만 바꾸고, 이어지는 build가 이 값을 읽는다.
+    if (!AdConsentService.canRequestAds) {
+      _consentBlocked = true;
+      return;
+    }
+    _consentBlocked = false;
 
     _hasRequestedForCurrentWidth = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -170,6 +222,16 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   }
 
   void _handleAdFailedToLoad(Ad ad, LoadAdError error) {
+    // SDK 자동 새로고침이 실패한 경우다. 표시 중인 광고는 이전 소재를 그대로
+    // 보여주고 있고 SDK가 다음 주기에 다시 채우므로, 여기서 버리면 멀쩡한
+    // 광고가 빈 자리로 바뀐다.
+    if (identical(ad, _visibleAd)) {
+      debugPrint(
+        'BannerAd refresh failed, keeping current ad: code=${error.code} message=${error.message}',
+      );
+      return;
+    }
+
     if (!identical(ad, _pendingAd)) {
       ad.dispose();
       return;
@@ -255,6 +317,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   @override
   void dispose() {
+    widget.retryTrigger?.removeListener(_handleRetryTrigger);
     _cancelRetry();
     _cancelLoadTimeout();
     _pendingAd?.dispose();
@@ -281,7 +344,8 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
         // 첫 광고가 채워지기 전까지만 자리를 유지한다.
         final l10n = AppLocalizations.of(context);
-        final isQuiet = _retryPolicy.retryCount >= _quietAfterRetries;
+        final isQuiet =
+            _consentBlocked || _retryPolicy.retryCount >= _quietAfterRetries;
         final message = isQuiet
             ? (l10n?.adUnavailable ?? 'Ad unavailable')
             : (l10n?.adLoading ?? 'Loading ad...');
