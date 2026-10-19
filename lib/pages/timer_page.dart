@@ -336,17 +336,19 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
 
   /// 전면 광고 표시
   void _showInterstitialAd() {
-    InterstitialAdManager.instance.show(
-      onDismissed: () {
-        if (mounted) {
-          Navigator.pop(context);
-        }
-      },
-      onUnavailable: () {
-        if (mounted) {
-          Navigator.pop(context);
-        }
-      },
+    unawaited(
+      InterstitialAdManager.instance.show(
+        onDismissed: () {
+          if (mounted) {
+            Navigator.pop(context);
+          }
+        },
+        onUnavailable: () {
+          if (mounted) {
+            Navigator.pop(context);
+          }
+        },
+      ),
     );
   }
 
