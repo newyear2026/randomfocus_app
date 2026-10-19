@@ -62,6 +62,9 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
   int _elapsedSeconds = 0; // 실제 진행된 시간 (초)
   bool _sessionSaved = false;
 
+  /// 진행 중인 히스토리 쓰기. 같은 세션이 두 번 기록되지 않게 붙잡아 둔다.
+  Future<void>? _pendingSessionSave;
+
   // 사운드 재생용 AudioPlayer
   final AudioPlayer _audioPlayer = AudioPlayer();
 
@@ -92,10 +95,10 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     _cancelTimers();
     unawaited(_cancelAlerts());
     _audioPlayer.dispose();
-    // 페이지를 벗어날 때 세션이 저장되지 않았고 실행 중이었다면 중단으로 저장
-    if (!_sessionSaved && _sessionStartTime != null && _elapsedSeconds > 0) {
-      _saveSession(SessionStatus.stopped);
-    }
+    // 떠나는 흐름(_showBackDialog)에서 이미 저장을 기다렸으므로 보통 여기서는
+    // 할 일이 없다. 그 흐름을 타지 않고 화면이 사라진 경우를 위한 안전망이며,
+    // dispose는 Future를 기다릴 수 없어 완료를 보장하지 못한다.
+    unawaited(_saveStoppedSessionIfNeeded());
     // 화면 잠금 해제 (페이지를 벗어날 때, 웹이 아닐 때만)
     _setScreenAwake(false);
     super.dispose();
@@ -431,11 +434,8 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     await _cancelAlerts();
 
     // Stop 시 현재 세션을 중단으로 저장 (집중 시간이 진행 중이었다면)
-    if (_currentState == TimerState.focus &&
-        _sessionStartTime != null &&
-        _elapsedSeconds > 0 &&
-        !_sessionSaved) {
-      await _saveSession(SessionStatus.stopped);
+    if (_currentState == TimerState.focus) {
+      await _saveStoppedSessionIfNeeded();
     }
 
     // 화면 잠금 해제 (다시 정상적으로 꺼질 수 있도록, 웹이 아닐 때만)
@@ -455,11 +455,8 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     await _cancelAlerts();
 
     // 리셋 시 현재 세션을 중단으로 저장 (집중 시간이 진행 중이었다면)
-    if (_currentState == TimerState.focus &&
-        _sessionStartTime != null &&
-        _elapsedSeconds > 0 &&
-        !_sessionSaved) {
-      await _saveSession(SessionStatus.stopped);
+    if (_currentState == TimerState.focus) {
+      await _saveStoppedSessionIfNeeded();
     }
 
     // 화면 잠금 해제 (다시 정상적으로 꺼질 수 있도록, 웹이 아닐 때만)
@@ -496,21 +493,59 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
       confirmColor: AppColors.accent(context),
     );
 
-    if (confirmed && mounted) {
-      // 전면 광고 표시 (웹이 아닐 때만)
-      if (!kIsWeb) {
-        _showInterstitialAd();
-      } else {
-        // 웹에서는 바로 페이지 닫기
-        Navigator.pop(context);
-      }
+    if (!confirmed || !mounted) return;
+
+    // 화면을 떠나기 전에 중단 세션을 끝까지 저장한다. dispose는 Future를 기다릴
+    // 수 없어 쓰기가 중간에 끊길 수 있으므로, 기다릴 수 있는 이 지점에서
+    // 마무리한다. 저장 실패가 이탈을 막아서는 안 되므로 예외는 보고만 한다.
+    try {
+      await _saveStoppedSessionIfNeeded();
+    } catch (error, stackTrace) {
+      await TelemetryService.reportError(
+        error,
+        stackTrace,
+        reason: 'history_save_before_timer_exit',
+      );
+    }
+
+    if (!mounted) return;
+
+    // 전면 광고 표시 (웹이 아닐 때만)
+    if (!kIsWeb) {
+      _showInterstitialAd();
+    } else {
+      // 웹에서는 바로 페이지 닫기
+      Navigator.pop(context);
     }
   }
 
-  /// 세션을 히스토리에 저장
-  Future<void> _saveSession(SessionStatus status) async {
-    if (_sessionSaved || _sessionId == null) return;
+  /// 진행 중이던 집중 세션을 중단으로 저장한다.
+  ///
+  /// 저장할 세션이 없으면 아무 일도 하지 않으므로, 떠나는 경로마다 같은 조건을
+  /// 늘어놓지 않아도 된다.
+  Future<void> _saveStoppedSessionIfNeeded() {
+    if (_sessionStartTime == null || _elapsedSeconds <= 0) {
+      return Future<void>.value();
+    }
+    return _saveSession(SessionStatus.stopped);
+  }
 
+  /// 세션을 히스토리에 저장
+  ///
+  /// 저장이 이미 진행 중이면 그 Future를 그대로 돌려준다. 저장 완료 표시는
+  /// 쓰기가 끝난 뒤에야 서기 때문에, 정지·리셋·화면 이탈이 겹치면 같은 세션이
+  /// 두 번 기록될 수 있다.
+  Future<void> _saveSession(SessionStatus status) {
+    final pending = _pendingSessionSave;
+    if (pending != null) return pending;
+    if (_sessionSaved || _sessionId == null) return Future<void>.value();
+
+    final future = _writeSession(status);
+    _pendingSessionSave = future;
+    return future;
+  }
+
+  Future<void> _writeSession(SessionStatus status) async {
     final history = TimerHistory(
       sessionId: _sessionId!,
       dateTime: DateTime.now(),
@@ -521,8 +556,13 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
       notes: null,
     );
 
-    await HistoryService.saveHistory(history);
-    _sessionSaved = true;
+    try {
+      await HistoryService.saveHistory(history);
+      _sessionSaved = true;
+    } finally {
+      _pendingSessionSave = null;
+    }
+
     unawaited(
       TelemetryService.logEvent(
         status == SessionStatus.completed
