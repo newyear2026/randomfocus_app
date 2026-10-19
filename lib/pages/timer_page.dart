@@ -5,21 +5,35 @@ import 'package:just_audio/just_audio.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../services/history_service.dart';
 import '../models/timer_history.dart';
+import '../services/ad_consent_service.dart';
 import '../services/app_localizations.dart';
 import '../services/interstitial_ad_manager.dart';
 import '../services/telemetry_service.dart';
+import '../services/timer_alert_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/app_dialogs.dart';
 import '../widgets/app_screen.dart';
 import '../widgets/banner_ad_widget.dart';
 import '../widgets/timer_header_content.dart';
+import '../widgets/timer_completion_dialog.dart';
 import '../widgets/timer_status_panel.dart';
 
 class TimerPage extends StatefulWidget {
   final int focusMinutes;
+  final Duration breakDuration;
+  final Duration completionDialogDuration;
+  final TimerAlertController? alertController;
 
-  const TimerPage({super.key, required this.focusMinutes});
+  const TimerPage({
+    super.key,
+    required this.focusMinutes,
+    this.breakDuration = const Duration(minutes: 10),
+    this.completionDialogDuration = const Duration(milliseconds: 1500),
+    this.alertController,
+  }) : assert(focusMinutes > 0),
+       assert(breakDuration > Duration.zero),
+       assert(completionDialogDuration > Duration.zero);
 
   @override
   State<TimerPage> createState() => _TimerPageState();
@@ -36,8 +50,11 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
   TimerState _currentState = TimerState.focus;
   bool _isRunning = false;
   bool _isCompleting = false;
+  bool _breakCompleted = false;
+  bool _isPresentingCompletion = false;
   int _originalFocusSeconds = 0;
-  final int _originalBreakSeconds = 600; // 10분 (600초)
+  late final int _originalBreakSeconds;
+  AppLifecycleState _lifecycleState = AppLifecycleState.resumed;
 
   // 세션 추적 변수
   String? _sessionId;
@@ -51,15 +68,21 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
   /// 타이머를 시작할 때마다 배너 광고에 재시도 예산을 다시 주는 신호.
   final ValueNotifier<int> _adRetryTrigger = ValueNotifier<int>(0);
 
+  TimerAlertController get _alerts =>
+      widget.alertController ?? TimerAlertService.instance;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _originalFocusSeconds = widget.focusMinutes; // 초 단위
+    _originalBreakSeconds = widget.breakDuration.inSeconds;
     _remainingSeconds = _originalFocusSeconds;
     _remainingDuration = Duration(seconds: _originalFocusSeconds);
     _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
-    InterstitialAdManager.instance.preload();
+    if (AdConsentService.canRequestAds) {
+      InterstitialAdManager.instance.preload();
+    }
   }
 
   @override
@@ -67,6 +90,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _adRetryTrigger.dispose();
     _cancelTimers();
+    unawaited(_cancelAlerts());
     _audioPlayer.dispose();
     // 페이지를 벗어날 때 세션이 저장되지 않았고 실행 중이었다면 중단으로 저장
     if (!_sessionSaved && _sessionStartTime != null && _elapsedSeconds > 0) {
@@ -81,9 +105,24 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (kIsWeb) return;
 
+    _lifecycleState = state;
     if (state == AppLifecycleState.resumed) {
-      _setScreenAwake(_isRunning);
+      unawaited(_cancelAlerts());
+      unawaited(_setScreenAwake(_isRunning));
+      if (_breakCompleted) {
+        unawaited(_presentBreakCompletion());
+        return;
+      }
       _tick();
+      return;
+    }
+
+    if (_isRunning &&
+        (state == AppLifecycleState.paused ||
+            state == AppLifecycleState.hidden ||
+            state == AppLifecycleState.detached)) {
+      _captureRemainingFromClock();
+      unawaited(_scheduleBackgroundAlerts());
     }
   }
 
@@ -127,7 +166,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
 
     final isComplete = _captureRemainingFromClock();
     if (isComplete) {
-      _onTimerComplete();
+      unawaited(_onTimerComplete());
       return;
     }
 
@@ -153,6 +192,141 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
         error,
         stackTrace,
         reason: 'wakelock_update',
+      );
+    }
+  }
+
+  bool get _isForeground => _lifecycleState == AppLifecycleState.resumed;
+
+  Future<void> _requestAlertPermissions() async {
+    try {
+      await _alerts.requestPermissions();
+    } catch (error, stackTrace) {
+      await TelemetryService.reportError(
+        error,
+        stackTrace,
+        reason: 'timer_alert_permission',
+      );
+    }
+  }
+
+  Future<void> _scheduleBackgroundAlerts() async {
+    if (!_shouldKeepBackgroundAlerts) {
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context);
+    final scheduledState = _currentState;
+    final scheduledRemaining = _remainingDuration;
+    try {
+      await _alerts.cancelAll();
+      if (!_shouldKeepBackgroundAlerts) return;
+
+      if (scheduledState == TimerState.focus) {
+        await _alerts.schedule(
+          phase: TimerAlertPhase.focus,
+          delay: scheduledRemaining,
+          title: l10n?.focusCompleteTitle ?? 'Focus complete',
+          body:
+              l10n?.focusCompleteBody ??
+              'Great work. Your 10-minute break starts now.',
+        );
+        if (!_shouldKeepBackgroundAlerts) {
+          await _alerts.cancelAll();
+          return;
+        }
+        await _alerts.schedule(
+          phase: TimerAlertPhase.breakTime,
+          delay: scheduledRemaining + widget.breakDuration,
+          title: l10n?.breakCompleteTitle ?? 'Break complete',
+          body:
+              l10n?.breakCompleteBody ??
+              'Your break is over. Ready to focus again?',
+        );
+        if (!_shouldKeepBackgroundAlerts) {
+          await _alerts.cancelAll();
+        }
+        return;
+      }
+
+      await _alerts.schedule(
+        phase: TimerAlertPhase.breakTime,
+        delay: scheduledRemaining,
+        title: l10n?.breakCompleteTitle ?? 'Break complete',
+        body:
+            l10n?.breakCompleteBody ??
+            'Your break is over. Ready to focus again?',
+      );
+      if (!_shouldKeepBackgroundAlerts) {
+        await _alerts.cancelAll();
+      }
+    } catch (error, stackTrace) {
+      await TelemetryService.reportError(
+        error,
+        stackTrace,
+        reason: 'timer_alert_schedule',
+      );
+    }
+  }
+
+  Future<void> _scheduleBreakAlertOnly() async {
+    if (!_shouldKeepBackgroundAlerts) {
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context);
+    final scheduledRemaining = _remainingDuration;
+    try {
+      await _alerts.schedule(
+        phase: TimerAlertPhase.breakTime,
+        delay: scheduledRemaining,
+        title: l10n?.breakCompleteTitle ?? 'Break complete',
+        body:
+            l10n?.breakCompleteBody ??
+            'Your break is over. Ready to focus again?',
+      );
+      if (!_shouldKeepBackgroundAlerts) {
+        await _alerts.cancelAll();
+      }
+    } catch (error, stackTrace) {
+      await TelemetryService.reportError(
+        error,
+        stackTrace,
+        reason: 'break_alert_schedule',
+      );
+    }
+  }
+
+  bool get _shouldKeepBackgroundAlerts =>
+      mounted &&
+      _isRunning &&
+      !_isForeground &&
+      _remainingDuration > Duration.zero;
+
+  Future<void> _cancelAlerts() async {
+    try {
+      await _alerts.cancelAll();
+    } catch (error, stackTrace) {
+      await TelemetryService.reportError(
+        error,
+        stackTrace,
+        reason: 'timer_alert_cancel',
+      );
+    }
+  }
+
+  Future<void> _announceCompletion(TimerAlertPhase phase) async {
+    if (!_isForeground) return;
+
+    await _cancelAlerts();
+    unawaited(_playStartSound());
+    try {
+      await _alerts.vibrate(phase);
+    } catch (error, stackTrace) {
+      await TelemetryService.reportError(
+        error,
+        stackTrace,
+        reason: 'timer_completion_haptic',
       );
     }
   }
@@ -191,7 +365,11 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     }
   }
 
-  void _startTimer() {
+  void _startTimer({
+    bool announceStart = true,
+    bool requestAlertPermission = true,
+    bool scheduleBackgroundAlert = true,
+  }) {
     if (_isRunning || _isCompleting || _remainingDuration == Duration.zero) {
       return;
     }
@@ -202,10 +380,14 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
       _elapsedSeconds = 0;
     }
 
-    // Start 버튼 클릭 시 사운드 재생 (비동기로 실행, 에러는 무시)
-    _playStartSound().catchError((error) {
-      // 에러 무시
-    });
+    if (requestAlertPermission) {
+      unawaited(_requestAlertPermissions());
+    }
+
+    // 자동 휴식 전환에서는 완료음이 이미 재생됐으므로 시작음을 반복하지 않는다.
+    if (announceStart) {
+      unawaited(_playStartSound());
+    }
 
     // 화면이 꺼지지 않도록 설정 (웹이 아닐 때만)
     _setScreenAwake(true);
@@ -219,7 +401,10 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
 
     _deadline = DateTime.now().add(_remainingDuration);
     _ticker = Timer.periodic(const Duration(milliseconds: 250), (_) => _tick());
-    _completionTimer = Timer(_remainingDuration, _onTimerComplete);
+    _completionTimer = Timer(
+      _remainingDuration,
+      () => unawaited(_onTimerComplete()),
+    );
     unawaited(
       TelemetryService.logEvent(
         'focus_timer_started',
@@ -229,17 +414,21 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
         },
       ),
     );
+    if (!_isForeground && scheduleBackgroundAlert) {
+      unawaited(_scheduleBackgroundAlerts());
+    }
     _tick();
   }
 
   Future<void> _stopTimer() async {
     final isComplete = _captureRemainingFromClock();
     if (isComplete) {
-      _onTimerComplete();
+      unawaited(_onTimerComplete());
       return;
     }
     _cancelTimers();
     _deadline = null;
+    await _cancelAlerts();
 
     // Stop 시 현재 세션을 중단으로 저장 (집중 시간이 진행 중이었다면)
     if (_currentState == TimerState.focus &&
@@ -263,6 +452,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     _captureRemainingFromClock();
     _cancelTimers();
     _deadline = null;
+    await _cancelAlerts();
 
     // 리셋 시 현재 세션을 중단으로 저장 (집중 시간이 진행 중이었다면)
     if (_currentState == TimerState.focus &&
@@ -346,9 +536,11 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     );
   }
 
-  void _onTimerComplete() {
+  Future<void> _onTimerComplete() async {
     if (_isCompleting) return;
     _isCompleting = true;
+
+    final completedDeadline = _deadline ?? DateTime.now();
     _captureRemainingFromClock();
     _cancelTimers();
     _deadline = null;
@@ -356,57 +548,117 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     _remainingSeconds = 0;
 
     if (_currentState == TimerState.focus) {
-      // 집중 시간 완료 -> 히스토리 저장 (completed 상태)
-      _saveSession(SessionStatus.completed)
-          .then((_) {
-            // 저장 완료 후 휴식 시간 시작
-            if (mounted) {
-              // Focus가 끝나고 Break로 넘어갈 때 사운드 재생 (비동기로 실행)
-              _playStartSound().catchError((error) {
-                // 에러 무시
-              });
-
-              setState(() {
-                _currentState = TimerState.breakTime;
-                _remainingSeconds = _originalBreakSeconds;
-                _remainingDuration = Duration(seconds: _originalBreakSeconds);
-                _isRunning = false;
-                _isCompleting = false;
-              });
-              // 자동으로 휴식 타이머 시작 (화면은 계속 켜둠)
-              _startTimer();
-            }
-          })
-          .catchError((error, stackTrace) {
-            TelemetryService.reportError(
-              error,
-              stackTrace,
-              reason: 'history_save_after_focus_completion',
-            );
-            // 세션 저장 실패 시 조용히 처리
-            // 저장 실패해도 휴식 시간은 시작
-            if (mounted) {
-              // Focus가 끝나고 Break로 넘어갈 때 사운드 재생 (비동기로 실행)
-              _playStartSound().catchError((error) {
-                // 에러 무시
-              });
-
-              setState(() {
-                _currentState = TimerState.breakTime;
-                _remainingSeconds = _originalBreakSeconds;
-                _remainingDuration = Duration(seconds: _originalBreakSeconds);
-                _isRunning = false;
-                _isCompleting = false;
-              });
-              _startTimer();
-            }
-          });
-    } else {
-      // 휴식 시간 종료 -> 화면 잠금 해제 후 룰렛 페이지로 돌아가기 (웹이 아닐 때만)
-      _setScreenAwake(false);
-      if (mounted) {
-        Navigator.pop(context);
+      try {
+        await _saveSession(SessionStatus.completed);
+      } catch (error, stackTrace) {
+        await TelemetryService.reportError(
+          error,
+          stackTrace,
+          reason: 'history_save_after_focus_completion',
+        );
       }
+
+      if (!mounted) return;
+
+      final breakDeadline = completedDeadline.add(widget.breakDuration);
+      final breakRemaining = breakDeadline.difference(DateTime.now());
+
+      // 앱으로 돌아왔을 때 휴식까지 이미 끝났다면 집중 완료와 휴식 완료를
+      // 연달아 울리지 않고, 최종 상태인 휴식 완료만 안내한다.
+      if (breakRemaining <= Duration.zero) {
+        setState(() {
+          _currentState = TimerState.breakTime;
+          _remainingDuration = Duration.zero;
+          _remainingSeconds = 0;
+          _isRunning = false;
+          _isCompleting = false;
+          _breakCompleted = true;
+        });
+        unawaited(_setScreenAwake(false));
+        if (_isForeground) {
+          await _presentBreakCompletion();
+        }
+        return;
+      }
+
+      if (_isForeground) {
+        await _announceCompletion(TimerAlertPhase.focus);
+      }
+      if (!mounted) return;
+
+      final adjustedBreakRemaining = breakDeadline.difference(DateTime.now());
+      if (adjustedBreakRemaining <= Duration.zero) {
+        setState(() {
+          _currentState = TimerState.breakTime;
+          _remainingDuration = Duration.zero;
+          _remainingSeconds = 0;
+          _isRunning = false;
+          _isCompleting = false;
+          _breakCompleted = true;
+        });
+        unawaited(_setScreenAwake(false));
+        if (_isForeground) {
+          await _presentBreakCompletion();
+        }
+        return;
+      }
+
+      setState(() {
+        _currentState = TimerState.breakTime;
+        _remainingDuration = adjustedBreakRemaining;
+        _remainingSeconds = _displaySeconds(adjustedBreakRemaining);
+        _isRunning = false;
+        _isCompleting = false;
+      });
+      // 백그라운드로 전환될 때 집중/휴식 완료 알림을 함께 예약했으므로,
+      // 자동 휴식 전환 중에는 같은 알림을 다시 예약하지 않는다.
+      _startTimer(
+        announceStart: false,
+        requestAlertPermission: false,
+        scheduleBackgroundAlert: false,
+      );
+      if (!_isForeground) {
+        unawaited(_scheduleBreakAlertOnly());
+      }
+      return;
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _isRunning = false;
+      _isCompleting = false;
+      _breakCompleted = true;
+    });
+    unawaited(_setScreenAwake(false));
+    if (_isForeground) {
+      await _presentBreakCompletion();
+    }
+  }
+
+  Future<void> _presentBreakCompletion() async {
+    if (!mounted || !_breakCompleted || _isPresentingCompletion) return;
+
+    _isPresentingCompletion = true;
+    final l10n = AppLocalizations.of(context);
+    unawaited(_announceCompletion(TimerAlertPhase.breakTime));
+
+    try {
+      await showTimerCompletionDialog(
+        context: context,
+        title: l10n?.breakCompleteTitle ?? 'Break complete',
+        message:
+            l10n?.breakCompleteBody ??
+            'Your break is over. Ready to focus again?',
+        returningLabel: l10n?.returningToWheel ?? 'Returning to Wheel',
+        actionLabel: l10n?.goNow ?? 'Go now',
+        autoCloseDuration: widget.completionDialogDuration,
+      );
+    } finally {
+      _isPresentingCompletion = false;
+    }
+
+    if (mounted && _breakCompleted) {
+      Navigator.of(context).pop();
     }
   }
 
@@ -426,6 +678,9 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
 
   String _getStatusText(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    if (_breakCompleted) {
+      return l10n?.completed ?? 'Completed';
+    }
     if (!_isRunning && _remainingSeconds == _originalFocusSeconds) {
       return l10n?.ready ?? 'Ready';
     } else if (_isRunning) {
@@ -497,8 +752,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
       title: TimerHeaderContent(
         title: _getStateLabel(context),
         // focusMinutes 는 초 단위로 전달되므로 사람이 읽는 분 단위로 환산한다.
-        subtitle:
-            '${widget.focusMinutes ~/ 60} ${l10n?.minutes ?? 'minutes'}',
+        subtitle: '${widget.focusMinutes ~/ 60} ${l10n?.minutes ?? 'minutes'}',
       ),
       bodyPadding: AppSpacing.screenHorizontal,
       body: Column(
@@ -517,7 +771,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
               resetLabel: l10n?.resetTimer ?? 'Reset timer',
               progressSemanticsLabel:
                   l10n?.translate('focusProgress') ?? 'Focus progress',
-              onStart: _startTimer,
+              onStart: () => _startTimer(),
               onStop: _stopTimer,
               onReset: _resetTimer,
             ),

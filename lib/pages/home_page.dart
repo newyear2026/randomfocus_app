@@ -4,16 +4,19 @@ import 'history_page.dart';
 import 'settings_page.dart';
 import '../models/app_language.dart';
 import '../services/app_localizations.dart';
+import '../services/screen_tracking_observer.dart';
 import '../widgets/app_bottom_navigation_bar.dart';
 
 class HomePage extends StatefulWidget {
   final Function(AppLanguage)? onLanguageChanged;
   final Function(ThemeMode)? onThemeModeChanged;
+  final ScreenTrackingObserver? screenTracker;
 
   const HomePage({
     super.key,
     this.onLanguageChanged,
     this.onThemeModeChanged,
+    this.screenTracker,
   });
 
   @override
@@ -62,6 +65,13 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
         onSelected: (index) {
+          widget.screenTracker?.selectTab(
+            const [
+              RandomFocusScreen.roulette,
+              RandomFocusScreen.history,
+              RandomFocusScreen.settings,
+            ][index],
+          );
           setState(() {
             _currentIndex = index;
           });

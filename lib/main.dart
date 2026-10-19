@@ -1,6 +1,5 @@
 import 'dart:ui';
 
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -15,7 +14,9 @@ import 'services/app_localizations.dart';
 import 'services/interstitial_ad_manager.dart';
 import 'services/history_service.dart';
 import 'services/telemetry_service.dart';
+import 'services/screen_tracking_observer.dart';
 import 'services/theme_service.dart';
+import 'services/timer_alert_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/app_update_notice.dart';
 import 'firebase_options.dart';
@@ -34,6 +35,20 @@ void main() async {
 
   // 과거 버전에서 초 단위로 잘못 저장된 히스토리의 selectedTime을 분으로 정규화
   await HistoryService.migrateSelectedTimeIfNeeded();
+
+  // 권한 요청은 사용자가 타이머를 시작할 때 한다. 여기서는 예약 알림을
+  // 사용할 수 있도록 플랫폼 채널만 미리 준비한다.
+  if (!kIsWeb) {
+    try {
+      await TimerAlertService.instance.initialize();
+    } catch (error, stackTrace) {
+      await TelemetryService.reportError(
+        error,
+        stackTrace,
+        reason: 'timer_alert_initialization',
+      );
+    }
+  }
 
   // Google Mobile Ads 초기화 (웹이 아닐 때만)
   if (!kIsWeb) {
@@ -77,6 +92,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  final _screenTracker = ScreenTrackingObserver();
   late AppLanguage _language = widget.initialLanguage;
   late ThemeMode _themeMode = widget.initialThemeMode;
 
@@ -111,11 +127,10 @@ class _MyAppState extends State<MyApp> {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: _themeMode,
-      navigatorObservers: [
-        FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
-      ],
+      navigatorObservers: [_screenTracker],
       home: AppUpdateNotice(
         child: HomePage(
+          screenTracker: _screenTracker,
           onLanguageChanged: _changeLanguage,
           onThemeModeChanged: _changeThemeMode,
         ),

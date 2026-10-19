@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../services/screen_tracking_observer.dart';
 import '../models/app_language.dart';
 import '../services/language_service.dart';
 import '../services/app_localizations.dart';
@@ -379,6 +380,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
+                      settings: RouteSettings(
+                        name: RandomFocusScreen.iconPreview.routeName,
+                      ),
                       builder: (context) => const IconPreviewPage(),
                     ),
                   );

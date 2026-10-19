@@ -7,6 +7,20 @@ import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 class TelemetryService {
   TelemetryService._();
 
+  static Future<void> logScreenView(String screenName) async {
+    if (Firebase.apps.isEmpty) return;
+
+    try {
+      await FirebaseAnalytics.instance.logScreenView(
+        screenName: screenName,
+        screenClass: 'RandomFocus',
+      );
+    } catch (error, stackTrace) {
+      debugPrint('Analytics screen view failed ($screenName): $error');
+      await reportError(error, stackTrace, reason: 'analytics_screen_view');
+    }
+  }
+
   static Future<void> logEvent(
     String name, {
     Map<String, Object>? parameters,

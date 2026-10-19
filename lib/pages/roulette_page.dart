@@ -5,6 +5,7 @@ import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
 import 'timer_page.dart';
 import '../services/app_localizations.dart';
 import '../services/telemetry_service.dart';
+import '../services/screen_tracking_observer.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_dialogs.dart';
 import '../widgets/app_screen.dart';
@@ -98,6 +99,7 @@ class _RoulettePageState extends State<RoulettePage> {
     } else if (result == 'start_timer') {
       await Navigator.of(context).push(
         MaterialPageRoute(
+          settings: RouteSettings(name: RandomFocusScreen.timer.routeName),
           builder: (_) => TimerPage(focusMinutes: selectedSeconds),
         ),
       );

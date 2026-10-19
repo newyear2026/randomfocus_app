@@ -61,6 +61,12 @@ class AppLocalizations {
       'goBackButton': 'Go Back',
       'cancel': 'Cancel',
       'end': 'End',
+      'focusCompleteTitle': 'Focus complete',
+      'focusCompleteBody': 'Great work. Your 10-minute break starts now.',
+      'breakCompleteTitle': 'Break complete',
+      'breakCompleteBody': 'Your break is over. Ready to focus again?',
+      'returningToWheel': 'Returning to Wheel',
+      'goNow': 'Go now',
 
       // Settings Page
       'preferences': 'Preferences',
@@ -200,6 +206,14 @@ class AppLocalizations {
       'goBackButton': 'Volver',
       'cancel': 'Cancelar',
       'end': 'Finalizar',
+      'focusCompleteTitle': 'Enfoque completado',
+      'focusCompleteBody':
+          'Buen trabajo. Ahora comienza tu descanso de 10 minutos.',
+      'breakCompleteTitle': 'Descanso completado',
+      'breakCompleteBody':
+          'Tu descanso ha terminado. ¿Listo para concentrarte de nuevo?',
+      'returningToWheel': 'Volviendo a la rueda',
+      'goNow': 'Ir ahora',
 
       // Settings Page
       'preferences': 'Preferencias',
@@ -339,6 +353,12 @@ class AppLocalizations {
       'goBackButton': '返回',
       'cancel': '取消',
       'end': '结束',
+      'focusCompleteTitle': '专注完成',
+      'focusCompleteBody': '做得很好。现在开始休息 10 分钟。',
+      'breakCompleteTitle': '休息结束',
+      'breakCompleteBody': '休息时间结束了。准备好再次专注了吗？',
+      'returningToWheel': '正在返回转盘',
+      'goNow': '立即前往',
 
       // Settings Page
       'preferences': '偏好设置',
@@ -479,6 +499,12 @@ class AppLocalizations {
   String get goBackButton => translate('goBackButton');
   String get cancel => translate('cancel');
   String get end => translate('end');
+  String get focusCompleteTitle => translate('focusCompleteTitle');
+  String get focusCompleteBody => translate('focusCompleteBody');
+  String get breakCompleteTitle => translate('breakCompleteTitle');
+  String get breakCompleteBody => translate('breakCompleteBody');
+  String get returningToWheel => translate('returningToWheel');
+  String get goNow => translate('goNow');
   String get notifications => translate('notifications');
   String get manageAlerts => translate('manageAlerts');
   String get preferences => translate('preferences');
