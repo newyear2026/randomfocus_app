@@ -5,17 +5,28 @@ import '../models/timer_history.dart';
 class HistoryService {
   static const String _keyHistory = 'timer_history';
 
+  /// 저장소에 보관하는 최대 세션 수.
+  ///
+  /// 전체 목록을 JSON 한 덩어리로 넣는 구조라 저장할 때마다 전부 다시
+  /// 직렬화한다. 항목당 약 136바이트이므로 이 값에서 약 270KB가 되는데,
+  /// 여기서 더 키우려면 저장소를 데이터베이스로 바꾸는 쪽이 맞다.
+  /// 하루 10세션을 쓰는 유저도 6개월 이상, 하루 3세션이면 1년 10개월쯤
+  /// 남는다.
+  static const int maxStoredSessions = 2000;
+
   /// 히스토리 저장
   static Future<void> saveHistory(TimerHistory history) async {
     final prefs = await SharedPreferences.getInstance();
     final histories = await getHistories();
 
-    // 새로운 히스토리를 맨 앞에 추가 (최신순)
-    histories.insert(0, history);
+    histories.add(history);
 
-    // 최대 100개까지만 저장
-    if (histories.length > 100) {
-      histories.removeRange(100, histories.length);
+    // 상한을 넘으면 가장 오래된 기록부터 버린다. 세션은 보통 최신순으로
+    // 쌓이지만, 뒤늦게 저장되는 중단 세션이 있어 순서가 어긋날 수 있다.
+    // 무엇이 가장 오래된 기록인지는 목록 위치가 아니라 시각이 정해야 한다.
+    histories.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    if (histories.length > maxStoredSessions) {
+      histories.removeRange(maxStoredSessions, histories.length);
     }
 
     // JSON으로 변환하여 저장
