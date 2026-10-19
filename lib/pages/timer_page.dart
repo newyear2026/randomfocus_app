@@ -48,6 +48,9 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
   // 사운드 재생용 AudioPlayer
   final AudioPlayer _audioPlayer = AudioPlayer();
 
+  /// 타이머를 시작할 때마다 배너 광고에 재시도 예산을 다시 주는 신호.
+  final ValueNotifier<int> _adRetryTrigger = ValueNotifier<int>(0);
+
   @override
   void initState() {
     super.initState();
@@ -62,6 +65,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _adRetryTrigger.dispose();
     _cancelTimers();
     _audioPlayer.dispose();
     // 페이지를 벗어날 때 세션이 저장되지 않았고 실행 중이었다면 중단으로 저장
@@ -209,6 +213,9 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     setState(() {
       _isRunning = true;
     });
+
+    // 초기 로드가 연달아 실패해 비어 있는 배너에 다시 기회를 준다.
+    _adRetryTrigger.value++;
 
     _deadline = DateTime.now().add(_remainingDuration);
     _ticker = Timer.periodic(const Duration(milliseconds: 250), (_) => _tick());
@@ -516,9 +523,9 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-            child: BannerAdWidget(),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+            child: BannerAdWidget(retryTrigger: _adRetryTrigger),
           ),
           const SizedBox(height: AppSpacing.lg),
         ],
