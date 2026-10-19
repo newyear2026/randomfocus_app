@@ -201,6 +201,10 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
 
   bool get _isForeground => _lifecycleState == AppLifecycleState.resumed;
 
+  /// 알림 권한을 이 화면에서 이미 요청했는지. 시작할 때마다 다시 묻지 않도록
+  /// 한 번만 세운다. 요청이 겹치면 플러그인이 진행 중 오류를 돌려준다.
+  bool _alertPermissionsRequested = false;
+
   Future<void> _requestAlertPermissions() async {
     try {
       await _alerts.requestPermissions();
@@ -385,7 +389,8 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
       _elapsedSeconds = 0;
     }
 
-    if (requestAlertPermission) {
+    if (requestAlertPermission && !_alertPermissionsRequested) {
+      _alertPermissionsRequested = true;
       unawaited(_requestAlertPermissions());
     }
 

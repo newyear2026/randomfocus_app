@@ -83,7 +83,10 @@ class TimerAlertService implements TimerAlertController {
             AndroidFlutterLocalNotificationsPlugin
           >();
       await android?.requestNotificationsPermission();
-      await android?.requestExactAlarmsPermission();
+      // 정확 알람 권한은 요청하지 않는다. 매니페스트의 USE_EXACT_ALARM으로
+      // 설치 시 부여되고, 플러그인의 requestExactAlarmsPermission은 권한이
+      // 없을 때 시스템 설정 화면을 띄워 타이머 시작을 가로막는다. 권한이
+      // 없는 기기에서는 schedule이 부정확 알람으로 알아서 내려간다.
       return;
     }
 

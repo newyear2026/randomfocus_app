@@ -7,6 +7,19 @@ import 'package:my_first_app/services/app_localizations.dart';
 import 'package:my_first_app/services/timer_alert_service.dart';
 import 'package:my_first_app/widgets/timer_completion_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wakelock_plus_platform_interface/wakelock_plus_platform_interface.dart';
+
+/// 실제 구현은 메서드 채널 응답을 기다리므로 테스트에서 끝나지 않는다. 화면
+/// 깨우기를 기다리는 정지·리셋 경로가 진행되도록 메모리 구현으로 바꿔 끼운다.
+class _FakeWakelock extends WakelockPlusPlatformInterface {
+  bool _enabled = false;
+
+  @override
+  Future<void> toggle({required bool enable}) async => _enabled = enable;
+
+  @override
+  Future<bool> get enabled async => _enabled;
+}
 
 class _ScheduledAlert {
   const _ScheduledAlert({required this.phase, required this.delay});
@@ -71,6 +84,7 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     AdConsentService.setCanRequestAdsForTesting(false);
+    WakelockPlusPlatformInterface.instance = _FakeWakelock();
   });
 
   tearDown(() {
@@ -219,6 +233,41 @@ void main() {
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
     expect(alerts.cancelAllCalls, greaterThan(cancellationsBeforeResume));
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+
+  testWidgets('restarting a timer does not ask for permissions again', (
+    tester,
+  ) async {
+    final alerts = _FakeTimerAlerts();
+
+    await tester.pumpWidget(
+      _localizedApp(
+        home: TimerPage(
+          focusMinutes: 300,
+          breakDuration: const Duration(seconds: 10),
+          alertController: alerts,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Start'));
+    await tester.pump();
+    expect(alerts.permissionRequests, 1);
+
+    // 정지하면 타이머가 취소되어 프레임이 멈추므로 settle 해도 안전하다.
+    await tester.tap(find.text('Stop'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Start'));
+    await tester.pump();
+
+    // 요청이 겹치면 플러그인이 진행 중 오류를 돌려주고, 정확 알람 권한이
+    // 없는 기기에서는 시스템 설정 화면이 열린다. 한 번으로 끝내야 한다.
+    expect(alerts.permissionRequests, 1);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();

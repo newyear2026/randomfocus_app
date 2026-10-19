@@ -65,6 +65,11 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.13.1
 
+  # 이미 wakelock_plus를 통해 전이로 들어오는 패키지다. 테스트에서 화면 깨우기
+  # 플랫폼 구현을 가짜로 바꿔 끼우기 위해 직접 참조한다. 실제 구현은 메서드
+  # 채널을 기다리므로, 두지 않으면 정지·리셋 경로가 테스트에서 끝나지 않는다.
+  wakelock_plus_platform_interface: ^1.6.0
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
