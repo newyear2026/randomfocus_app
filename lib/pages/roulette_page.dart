@@ -60,8 +60,7 @@ class _RoulettePageState extends State<RoulettePage> {
   void _handleWheelAnimationEnd() async {
     if (_pendingIndex == null) return;
 
-    final selectedMinutes = _times[_pendingIndex!]; // 분 단위
-    final selectedSeconds = selectedMinutes * 60; // 초 단위로 변환
+    final selectedMinutes = _times[_pendingIndex!];
 
     unawaited(
       TelemetryService.logEvent(
@@ -74,7 +73,7 @@ class _RoulettePageState extends State<RoulettePage> {
 
     // 결과 창이 닫힌 뒤에만 회전 상태를 정리한다. Spin again은 이 처리
     // 이후에 시작해야 이전 회전의 정리 작업이 새 회전 결과를 지우지 않는다.
-    final result = await _showResultDialog(selectedSeconds);
+    final result = await _showResultDialog(selectedMinutes);
 
     if (!mounted) return;
 
@@ -100,14 +99,14 @@ class _RoulettePageState extends State<RoulettePage> {
       await Navigator.of(context).push(
         MaterialPageRoute(
           settings: RouteSettings(name: RandomFocusScreen.timer.routeName),
-          builder: (_) => TimerPage(focusMinutes: selectedSeconds),
+          builder: (_) =>
+              TimerPage(focusDuration: Duration(minutes: selectedMinutes)),
         ),
       );
     }
   }
 
-  Future<String?> _showResultDialog(int selectedSeconds) {
-    final selectedMinutes = selectedSeconds ~/ 60; // 분 단위로 변환
+  Future<String?> _showResultDialog(int selectedMinutes) {
     return showAppBottomSheet<String>(
       context: context,
       title: AppLocalizations.of(context)?.translate('result') ?? 'Result',
@@ -117,7 +116,7 @@ class _RoulettePageState extends State<RoulettePage> {
         children: [
           RouletteResultSheetContent(
             selectedMinutes: selectedMinutes,
-            accentColor: _colorForTime(context, selectedSeconds),
+            accentColor: _colorForTime(context, selectedMinutes),
             minutesLabel: AppLocalizations.of(context)?.minutes ?? 'minutes',
             spinAgainLabel:
                 AppLocalizations.of(context)?.translate('spinAgain') ??
@@ -177,7 +176,7 @@ class _RoulettePageState extends State<RoulettePage> {
                         ),
                       ),
                       style: FortuneItemStyle(
-                        color: _colorForTime(context, t * 60),
+                        color: _colorForTime(context, t),
                         borderColor: AppColors.surface(context),
                         borderWidth: 2,
                       ),
@@ -195,8 +194,7 @@ class _RoulettePageState extends State<RoulettePage> {
 /// 시간별로 다른 색상 할당.
 /// 색상 순서: 주황(25), 빨강(30), 청록(45), 보라(50), 파랑(60), 분홍(90)
 /// 다크 모드에서는 채도를 낮춘 변형을 쓴다.
-Color _colorForTime(BuildContext context, int seconds) {
-  final minutes = seconds ~/ 60; // 분 단위로 변환
+Color _colorForTime(BuildContext context, int minutes) {
   return AppColors.segmentColorForMinutes(
     minutes,
     dark: AppColors.isDark(context),

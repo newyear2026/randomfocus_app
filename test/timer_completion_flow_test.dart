@@ -147,7 +147,7 @@ void main() {
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (_) => TimerPage(
-                    focusMinutes: 1,
+                    focusDuration: const Duration(seconds: 1),
                     breakDuration: const Duration(seconds: 1),
                     completionDialogDuration: const Duration(seconds: 30),
                     alertController: alerts,
@@ -203,7 +203,7 @@ void main() {
     await tester.pumpWidget(
       _localizedApp(
         home: TimerPage(
-          focusMinutes: 30,
+          focusDuration: const Duration(seconds: 30),
           breakDuration: const Duration(seconds: 10),
           alertController: alerts,
         ),
@@ -246,7 +246,7 @@ void main() {
     await tester.pumpWidget(
       _localizedApp(
         home: TimerPage(
-          focusMinutes: 300,
+          focusDuration: const Duration(minutes: 5),
           breakDuration: const Duration(seconds: 10),
           alertController: alerts,
         ),

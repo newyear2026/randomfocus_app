@@ -20,18 +20,18 @@ import '../widgets/timer_completion_dialog.dart';
 import '../widgets/timer_status_panel.dart';
 
 class TimerPage extends StatefulWidget {
-  final int focusMinutes;
+  final Duration focusDuration;
   final Duration breakDuration;
   final Duration completionDialogDuration;
   final TimerAlertController? alertController;
 
   const TimerPage({
     super.key,
-    required this.focusMinutes,
+    required this.focusDuration,
     this.breakDuration = const Duration(minutes: 10),
     this.completionDialogDuration = const Duration(milliseconds: 1500),
     this.alertController,
-  }) : assert(focusMinutes > 0),
+  }) : assert(focusDuration > Duration.zero),
        assert(breakDuration > Duration.zero),
        assert(completionDialogDuration > Duration.zero);
 
@@ -78,7 +78,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _originalFocusSeconds = widget.focusMinutes; // 초 단위
+    _originalFocusSeconds = widget.focusDuration.inSeconds;
     _originalBreakSeconds = widget.breakDuration.inSeconds;
     _remainingSeconds = _originalFocusSeconds;
     _remainingDuration = Duration(seconds: _originalFocusSeconds);
@@ -420,7 +420,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
         'focus_timer_started',
         parameters: {
           'phase': _currentState == TimerState.focus ? 'focus' : 'break',
-          'focus_minutes': widget.focusMinutes ~/ 60,
+          'focus_minutes': widget.focusDuration.inMinutes,
         },
       ),
     );
@@ -556,8 +556,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     final history = TimerHistory(
       sessionId: _sessionId!,
       dateTime: DateTime.now(),
-      // widget.focusMinutes는 초 단위로 전달되므로 분으로 정규화하여 저장
-      selectedTime: widget.focusMinutes ~/ 60,
+      selectedTime: widget.focusDuration.inMinutes,
       actualTime: _elapsedSeconds,
       status: status,
       notes: null,
@@ -576,7 +575,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
             ? 'focus_session_completed'
             : 'focus_session_stopped',
         parameters: {
-          'focus_minutes': widget.focusMinutes ~/ 60,
+          'focus_minutes': widget.focusDuration.inMinutes,
           'elapsed_seconds': _elapsedSeconds,
         },
       ),
@@ -798,8 +797,8 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
             ),
       title: TimerHeaderContent(
         title: _getStateLabel(context),
-        // focusMinutes 는 초 단위로 전달되므로 사람이 읽는 분 단위로 환산한다.
-        subtitle: '${widget.focusMinutes ~/ 60} ${l10n?.minutes ?? 'minutes'}',
+        subtitle:
+            '${widget.focusDuration.inMinutes} ${l10n?.minutes ?? 'minutes'}',
       ),
       bodyPadding: AppSpacing.screenHorizontal,
       body: Column(

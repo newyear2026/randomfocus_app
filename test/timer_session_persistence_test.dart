@@ -36,7 +36,7 @@ class _SilentTimerAlerts implements TimerAlertController {
   Future<void> vibrate(TimerAlertPhase phase) async {}
 }
 
-/// 5분짜리 집중 타이머. `focusMinutes`는 초 단위로 전달된다.
+/// 5분짜리 집중 타이머.
 Widget _timerApp() {
   return MaterialApp(
     locale: const Locale('en'),
@@ -48,7 +48,7 @@ Widget _timerApp() {
     ],
     supportedLocales: const [Locale('en'), Locale('es'), Locale('zh')],
     home: TimerPage(
-      focusMinutes: 300,
+      focusDuration: const Duration(minutes: 5),
       breakDuration: const Duration(seconds: 10),
       alertController: _SilentTimerAlerts(),
     ),
