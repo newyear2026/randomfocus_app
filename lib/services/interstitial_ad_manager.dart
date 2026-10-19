@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'ad_consent_service.dart';
 import 'ad_frequency_policy.dart';
 import 'ad_ids.dart';
 import 'ad_retry_policy.dart';
@@ -30,6 +31,13 @@ class InterstitialAdManager {
 
   void preload() {
     if (kIsWeb || _isLoading || _interstitialAd != null) {
+      return;
+    }
+
+    // 배너와 같은 기준으로 막는다. 호출 지점이 여러 곳이라 각자 확인하게 두면
+    // 하나가 빠지고, 그 경로로 동의 없는 광고 요청이 나간다.
+    if (!AdConsentService.canRequestAds) {
+      debugPrint('InterstitialAd skipped: consent does not allow ad requests');
       return;
     }
 
