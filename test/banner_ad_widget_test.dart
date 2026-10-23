@@ -5,6 +5,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 // ignore: implementation_imports
 import 'package:google_mobile_ads/src/ad_instance_manager.dart';
 import 'package:my_first_app/services/ad_consent_service.dart';
+import 'package:my_first_app/services/ad_diagnostics.dart';
 import 'package:my_first_app/widgets/banner_ad_widget.dart';
 
 /// google_mobile_ads 플러그인의 메서드 채널을 가로채 광고 로드 결과를
@@ -21,6 +22,8 @@ class _FakeAdPlatform {
 
   /// null이면 적응형 크기를 구하지 못한 상황을 흉내 낸다.
   num? adaptiveHeight = 60;
+  bool failSizeQuery = false;
+  bool failLoadCall = false;
 
   int get lastAdId => loadedAdIds.last;
 
@@ -30,9 +33,11 @@ class _FakeAdPlatform {
       switch (call.method) {
         case 'AdSize#getLargeAnchoredAdaptiveBannerAdSize':
           requestedWidths.add(arguments!['width'] as int);
+          if (failSizeQuery) throw PlatformException(code: 'size_error');
           return adaptiveHeight;
         case 'loadBannerAd':
           loadedAdIds.add(arguments!['adId'] as int);
+          if (failLoadCall) throw PlatformException(code: 'load_error');
           return null;
         case 'disposeAd':
           disposedAdIds.add(arguments!['adId'] as int);
@@ -110,19 +115,6 @@ void main() {
             width: width,
             child: BannerAdWidget(retryTrigger: trigger),
           ),
-        ),
-      ),
-    );
-  }
-
-  /// const 인스턴스는 같은 객체라 Flutter가 리빌드를 건너뛴다. 탭 전환처럼
-  /// State는 유지한 채 build만 다시 도는 상황을 만들려면 새 인스턴스를 쓴다.
-  Widget rebuiltHostWithWidth(double width) {
-    return MaterialApp(
-      home: Scaffold(
-        body: Center(
-          // ignore: prefer_const_constructors
-          child: SizedBox(width: width, child: BannerAdWidget()),
         ),
       ),
     );
@@ -337,9 +329,8 @@ void main() {
     await settleRequest(tester);
     expect(platform.loadedAdIds, isEmpty);
 
-    // 설정 화면에서 동의를 허용하고 타이머 탭으로 돌아오면 build가 다시 돈다.
+    // Late consent must wake this mounted widget without a parent rebuild.
     AdConsentService.setCanRequestAdsForTesting(true);
-    await tester.pumpWidget(rebuiltHostWithWidth(320));
     await settleRequest(tester);
 
     expect(platform.loadedAdIds, hasLength(1));
@@ -422,5 +413,83 @@ void main() {
     expect(platform.loadedAdIds, hasLength(1));
     expect(visibleAdId(tester), adId);
     expect(platform.disposedAdIds, isNot(contains(adId)));
+  });
+
+  testWidgets('width change during loading requests the new width only once', (
+    tester,
+  ) async {
+    await tester.pumpWidget(hostWithWidth(320));
+    await settleRequest(tester);
+    final first = platform.lastAdId;
+    await tester.pumpWidget(hostWithWidth(300));
+    await settleRequest(tester);
+    expect(platform.loadedAdIds, hasLength(1));
+    await platform.emitLoaded(first);
+    await settleRequest(tester);
+    final second = platform.lastAdId;
+    await platform.emitLoaded(second);
+    await settleRequest(tester);
+    expect(platform.loadedAdIds, hasLength(2));
+    expect(platform.requestedWidths, [320, 300]);
+    expect(visibleAdId(tester), second);
+  });
+
+  testWidgets('adaptive-size exception falls back and remains retryable', (
+    tester,
+  ) async {
+    platform.failSizeQuery = true;
+    await tester.pumpWidget(hostWithWidth(320));
+    await settleRequest(tester);
+    expect(tester.takeException(), isNull);
+    expect(platform.loadedAdIds, hasLength(1));
+    final ad = instanceManager.adFor(platform.lastAdId) as BannerAd;
+    expect(ad.size, AdSize.banner);
+    await platform.emitFailedToLoad(platform.lastAdId);
+    platform.failSizeQuery = false;
+    await tester.pump(const Duration(minutes: 2));
+    await settleRequest(tester);
+    expect(platform.loadedAdIds, hasLength(2));
+    await platform.emitLoaded(platform.lastAdId);
+    await tester.pump();
+    expect(find.byType(AdWidget), findsOneWidget);
+  });
+
+  testWidgets('platform load error follows the bounded retry path', (
+    tester,
+  ) async {
+    platform.failLoadCall = true;
+    await tester.pumpWidget(hostWithWidth(320));
+    await settleRequest(tester);
+    expect(tester.takeException(), isNull);
+    expect(platform.disposedAdIds, contains(platform.lastAdId));
+    platform.failLoadCall = false;
+    await tester.pump(const Duration(minutes: 2));
+    await settleRequest(tester);
+    expect(platform.loadedAdIds, hasLength(2));
+    await platform.emitLoaded(platform.lastAdId);
+    await tester.pump();
+    expect(find.byType(AdWidget), findsOneWidget);
+  });
+
+  testWidgets('banner diagnostics distinguish mount request and impression', (
+    tester,
+  ) async {
+    final events = <Map<String, Object>>[];
+    AdDiagnostics.observer = events.add;
+    addTearDown(() => AdDiagnostics.observer = null);
+    await tester.pumpWidget(hostWithWidth(320));
+    await settleRequest(tester);
+    final adId = platform.lastAdId;
+    await platform.emitLoaded(adId);
+    await tester.pump();
+    expect(events.map((e) => e['stage']), [
+      'request',
+      'loadSucceeded',
+      'showRequested',
+    ]);
+    await platform._emit(adId, 'onAdImpression', {});
+    await tester.pump();
+    expect(events.last['stage'], 'impression');
+    expect(events.map((e) => e['request_id']).toSet(), hasLength(1));
   });
 }

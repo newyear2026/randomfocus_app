@@ -12,6 +12,7 @@ class RouletteShell extends StatelessWidget {
   final String spinSemanticsLabel;
   final VoidCallback? onSpinPressed;
   final bool enabled;
+  final Widget? footer;
 
   const RouletteShell({
     super.key,
@@ -20,6 +21,7 @@ class RouletteShell extends StatelessWidget {
     required this.spinSemanticsLabel,
     this.onSpinPressed,
     this.enabled = true,
+    this.footer,
   });
 
   @override
@@ -73,6 +75,10 @@ class RouletteShell extends StatelessWidget {
                           ),
                         ),
                       ),
+                      if (footer != null) ...[
+                        const SizedBox(height: 16),
+                        footer!,
+                      ],
                     ],
                   ),
                 ),

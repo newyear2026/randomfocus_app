@@ -20,6 +20,10 @@ import '../widgets/app_section_card.dart';
 import '../widgets/privacy_policy_sheet_content.dart';
 import '../widgets/app_update_notice.dart';
 import 'icon_preview_page.dart';
+import 'pro_page.dart';
+import 'focus_settings_page.dart';
+import 'presets_page.dart';
+import '../services/pro_service.dart';
 
 class SettingsPage extends StatefulWidget {
   final Function(AppLanguage)? onLanguageChanged;
@@ -38,6 +42,11 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  late final _pro = ProService.instance;
+  void _onProChanged() {
+    if (mounted) setState(() {});
+  }
+
   final ScrollController _scrollController = ScrollController();
   AppLanguage _currentLanguage = AppLanguage.system;
   ThemeMode _currentThemeMode = ThemeMode.system;
@@ -46,6 +55,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   void initState() {
     super.initState();
+    _pro.addListener(_onProChanged);
     _loadCurrentLanguage();
     _loadCurrentThemeMode();
     _loadAppVersion();
@@ -277,6 +287,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   void dispose() {
+    _pro.removeListener(_onProChanged);
     _scrollController.dispose();
     super.dispose();
   }
@@ -287,7 +298,9 @@ class _SettingsPageState extends State<SettingsPage> {
     final children = <Widget>[];
     for (var index = 0; index < tiles.length; index++) {
       if (index > 0) {
-        children.add(Divider(color: AppColors.subtleBorder(context), height: 1));
+        children.add(
+          Divider(color: AppColors.subtleBorder(context), height: 1),
+        );
       }
       children.add(tiles[index]);
     }
@@ -366,6 +379,59 @@ class _SettingsPageState extends State<SettingsPage> {
               title: l10n?.about ?? 'About',
               subtitle: _appVersion?.displayLabel ?? '...',
               onTap: _showAboutSheet,
+            ),
+          ]),
+          AppFormSectionHeader(
+            title: AppLocalizations.text(context, 'proTitle'),
+          ),
+          _buildGroup(context, [
+            AppInfoTile(
+              grouped: true,
+              icon: Icons.auto_awesome,
+              title: AppLocalizations.text(context, 'proTitle'),
+              subtitle: AppLocalizations.text(
+                context,
+                _pro.hasPro ? 'proActive' : 'proTagline',
+              ),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  settings: RouteSettings(
+                    name: RandomFocusScreen.pro.routeName,
+                  ),
+                  builder: (_) => const ProPage(),
+                ),
+              ),
+            ),
+            AppInfoTile(
+              grouped: true,
+              icon: Icons.tune,
+              title: AppLocalizations.text(context, 'proCustomTimes'),
+              subtitle: AppLocalizations.text(context, 'proCustomTimesDesc'),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  settings: RouteSettings(
+                    name: RandomFocusScreen.focusSettings.routeName,
+                  ),
+                  builder: (_) => const FocusSettingsPage(),
+                ),
+              ),
+            ),
+            AppInfoTile(
+              grouped: true,
+              icon: Icons.bookmarks_outlined,
+              title: AppLocalizations.text(context, 'proPresets'),
+              subtitle: AppLocalizations.text(context, 'proPresetsDesc'),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  settings: RouteSettings(
+                    name: RandomFocusScreen.presets.routeName,
+                  ),
+                  builder: (_) => const PresetsPage(),
+                ),
+              ),
             ),
           ]),
           // 아이콘 미리보기는 개발용 도구이므로 릴리스 빌드에서는 숨긴다.

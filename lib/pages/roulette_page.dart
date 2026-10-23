@@ -3,6 +3,11 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
 import 'timer_page.dart';
+import 'focus_settings_page.dart';
+import 'presets_page.dart';
+import '../models/duration_weights.dart';
+import '../services/focus_preferences.dart';
+import '../services/pro_service.dart';
 import '../services/app_localizations.dart';
 import '../services/telemetry_service.dart';
 import '../services/screen_tracking_observer.dart';
@@ -13,7 +18,15 @@ import '../widgets/roulette_result_sheet_content.dart';
 import '../widgets/roulette_shell.dart';
 
 class RoulettePage extends StatefulWidget {
-  const RoulettePage({super.key});
+  const RoulettePage({
+    super.key,
+    this.random,
+    this.preferences,
+    this.proService,
+  });
+  final Random? random;
+  final FocusPreferences? preferences;
+  final ProService? proService;
 
   @override
   State<RoulettePage> createState() => _RoulettePageState();
@@ -21,7 +34,17 @@ class RoulettePage extends StatefulWidget {
 
 class _RoulettePageState extends State<RoulettePage> {
   // 룰렛 시간 옵션 (분 단위)
-  final _times = [25, 30, 45, 50, 60, 90]; // 분 단위
+  late final _pro = widget.proService ?? ProService.instance;
+  late final _preferences = widget.preferences ?? FocusPreferences.instance;
+  late final _random = widget.random ?? Random();
+  List<int>? _spinTimes;
+  int? _pendingMinutes;
+  bool _preferencesError = false;
+  List<int> get _times =>
+      _spinTimes ??
+      (_pro.hasPro && _preferences.isLoaded
+          ? _preferences.current.durations
+          : DurationWeights.choices);
   late StreamController<int> _wheelController;
   int? _pendingIndex; // 룰렛 결과 (애니메이션 끝난 뒤 사용)
 
@@ -29,10 +52,48 @@ class _RoulettePageState extends State<RoulettePage> {
   void initState() {
     super.initState();
     _wheelController = StreamController<int>();
+    _pro.addListener(_onPreferencesChanged);
+    _preferences.addListener(_onPreferencesChanged);
+    unawaited(_loadPreferences());
+  }
+
+  Future<void> _loadPreferences() async {
+    try {
+      await _preferences.load();
+    } catch (_) {
+      if (mounted) setState(() => _preferencesError = true);
+    }
+    _onPreferencesChanged();
+  }
+
+  void _onPreferencesChanged() {
+    if (mounted) {
+      setState(() {
+        if (_preferences.isLoaded) _preferencesError = false;
+      });
+    }
+  }
+
+  void _openSettings(bool presets) {
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        settings: RouteSettings(
+          name: presets
+              ? RandomFocusScreen.presets.routeName
+              : RandomFocusScreen.focusSettings.routeName,
+        ),
+        builder: (_) => presets
+            ? PresetsPage(preferences: _preferences, proService: _pro)
+            : FocusSettingsPage(preferences: _preferences, proService: _pro),
+      ),
+    );
   }
 
   @override
   void dispose() {
+    _pro.removeListener(_onPreferencesChanged);
+    _preferences.removeListener(_onPreferencesChanged);
     _wheelController.close();
     super.dispose();
   }
@@ -45,22 +106,34 @@ class _RoulettePageState extends State<RoulettePage> {
     if (!mounted) return;
 
     // 룰렛에서 선택될 index
-    final index = Random().nextInt(_times.length);
+    final times = List<int>.from(_times);
+    final minutes = _pro.hasPro && _preferences.isLoaded
+        ? _preferences.current.draw(_random)
+        : times[_random.nextInt(times.length)];
+    final index = times.indexOf(minutes);
 
     setState(() {
+      _spinTimes = times;
+      _pendingMinutes = minutes;
       _pendingIndex = index;
     });
 
     unawaited(TelemetryService.logEvent('roulette_spin_started'));
 
     // 룰렛 회전 시작
-    _wheelController.add(index);
+    if (times.length == 1) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _handleWheelAnimationEnd();
+      });
+    } else {
+      _wheelController.add(index);
+    }
   }
 
   void _handleWheelAnimationEnd() async {
     if (_pendingIndex == null) return;
 
-    final selectedMinutes = _times[_pendingIndex!];
+    final selectedMinutes = _pendingMinutes!;
 
     unawaited(
       TelemetryService.logEvent(
@@ -79,6 +152,8 @@ class _RoulettePageState extends State<RoulettePage> {
 
     setState(() {
       _pendingIndex = null;
+      _pendingMinutes = null;
+      _spinTimes = null;
     });
 
     unawaited(
@@ -138,6 +213,18 @@ class _RoulettePageState extends State<RoulettePage> {
 
     return AppScreen(
       titleText: l10n?.appTitle ?? 'RandomFocus',
+      actions: [
+        IconButton(
+          tooltip: AppLocalizations.text(context, 'proCustomTimes'),
+          onPressed: _pendingIndex == null ? () => _openSettings(false) : null,
+          icon: const Icon(Icons.tune),
+        ),
+        IconButton(
+          tooltip: AppLocalizations.text(context, 'proPresets'),
+          onPressed: _pendingIndex == null ? () => _openSettings(true) : null,
+          icon: const Icon(Icons.bookmarks_outlined),
+        ),
+      ],
       subtitle:
           l10n?.translate('spinToChoose') ?? 'Spin to choose your focus time',
       body: LayoutBuilder(
@@ -147,43 +234,75 @@ class _RoulettePageState extends State<RoulettePage> {
             onSpinPressed: _onSpinPressed,
             spinLabel: l10n?.spin ?? 'Spin',
             spinSemanticsLabel: l10n?.spinWheel ?? 'Spin wheel',
-            wheel: FortuneWheel(
-              selected: _wheelController.stream,
-              onAnimationEnd: _handleWheelAnimationEnd,
-              indicators: <FortuneIndicator>[
-                // 삼각형 하나만으로 가리키는 위치를 표현한다. 원 배경을 덧대면
-                // 삼각형이 잘려 포인터가 아니라 얼룩처럼 보인다.
-                FortuneIndicator(
-                  alignment: Alignment.topCenter,
-                  child: TriangleIndicator(
-                    color: AppColors.accentStrong(context),
-                    width: 30,
-                    height: 30,
-                    elevation: 0,
-                  ),
-                ),
-              ],
-              items: _times
-                  .map(
-                    (t) => FortuneItem(
-                      child: Text(
-                        '$t',
-                        style: const TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                          letterSpacing: 0.5,
+            footer: _pro.hasPro
+                ? Text(
+                    _preferencesError
+                        ? AppLocalizations.text(
+                            context,
+                            'focusSettingsLoadError',
+                          )
+                        : '${AppLocalizations.text(context, 'focusCustomSummary')}\n${_preferences.current.weights.entries.map((e) => '${e.key}: ${e.value}%').join(' · ')}',
+                    textAlign: TextAlign.center,
+                  )
+                : null,
+            wheel: _times.length == 1
+                ? Semantics(
+                    label:
+                        '${_times.single} ${AppLocalizations.text(context, 'minutes')}',
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.statusFill(
+                          context,
+                          AppColors.accent(context),
                         ),
                       ),
-                      style: FortuneItemStyle(
-                        color: _colorForTime(context, t),
-                        borderColor: AppColors.surface(context),
-                        borderWidth: 2,
+                      child: Center(
+                        child: Text(
+                          '${_times.single}',
+                          style: Theme.of(context).textTheme.displayLarge,
+                        ),
                       ),
                     ),
                   )
-                  .toList(),
-            ),
+                : FortuneWheel(
+                    key: ValueKey(_times.join(',')),
+                    selected: _wheelController.stream,
+                    onAnimationEnd: _handleWheelAnimationEnd,
+                    indicators: <FortuneIndicator>[
+                      // 삼각형 하나만으로 가리키는 위치를 표현한다. 원 배경을 덧대면
+                      // 삼각형이 잘려 포인터가 아니라 얼룩처럼 보인다.
+                      FortuneIndicator(
+                        alignment: Alignment.topCenter,
+                        child: TriangleIndicator(
+                          color: AppColors.accentStrong(context),
+                          width: 30,
+                          height: 30,
+                          elevation: 0,
+                        ),
+                      ),
+                    ],
+                    items: _times
+                        .map(
+                          (t) => FortuneItem(
+                            child: Text(
+                              '$t',
+                              style: const TextStyle(
+                                fontSize: 30,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            style: FortuneItemStyle(
+                              color: _colorForTime(context, t),
+                              borderColor: AppColors.surface(context),
+                              borderWidth: 2,
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
           );
         },
       ),

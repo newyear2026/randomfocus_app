@@ -10,7 +10,10 @@ enum RandomFocusScreen {
   history('history'),
   settings('settings'),
   timer('timer'),
-  iconPreview('icon_preview');
+  iconPreview('icon_preview'),
+  pro('pro'),
+  focusSettings('focus_settings'),
+  presets('presets');
 
   const RandomFocusScreen(this.screenName);
 

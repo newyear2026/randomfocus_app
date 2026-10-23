@@ -6,6 +6,8 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../services/history_service.dart';
 import '../models/timer_history.dart';
 import '../services/ad_consent_service.dart';
+import '../services/pro_service.dart';
+import '../services/ad_runtime_service.dart';
 import '../services/app_localizations.dart';
 import '../services/interstitial_ad_manager.dart';
 import '../services/telemetry_service.dart';
@@ -83,7 +85,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     _remainingSeconds = _originalFocusSeconds;
     _remainingDuration = Duration(seconds: _originalFocusSeconds);
     _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
-    if (AdConsentService.canRequestAds) {
+    if (AdConsentService.canRequestAds && ProService.instance.adsAllowed) {
       InterstitialAdManager.instance.preload();
     }
   }
@@ -822,12 +824,38 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
               onReset: _resetTimer,
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-            child: BannerAdWidget(retryTrigger: _adRetryTrigger),
+          ListenableBuilder(
+            listenable: Listenable.merge([
+              ProService.instance,
+              AdRuntimeService.instance,
+            ]),
+            builder: (context, _) {
+              if (ProService.instance.hasPro) {
+                return Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Text(
+                    'Pro · ${AppLocalizations.text(context, 'proAdFree')}',
+                  ),
+                );
+              }
+              if (!ProService.instance.adsAllowed ||
+                  !AdRuntimeService.instance.isReady) {
+                return const SizedBox.shrink();
+              }
+              return Column(
+                children: [
+                  const SizedBox(height: AppSpacing.lg),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.sm,
+                    ),
+                    child: BannerAdWidget(retryTrigger: _adRetryTrigger),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                ],
+              );
+            },
           ),
-          const SizedBox(height: AppSpacing.lg),
         ],
       ),
     );

@@ -5,9 +5,10 @@ import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/ad_consent_service.dart';
 import '../services/ad_ids.dart';
+import '../services/ad_diagnostics.dart';
+import '../services/pro_service.dart';
 import '../services/ad_retry_policy.dart';
 import '../services/app_localizations.dart';
-import '../services/telemetry_service.dart';
 import '../theme/app_colors.dart';
 
 /// 배너 광고 위젯
@@ -45,12 +46,15 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   /// 로드 중인 다음 광고. 성공해야 _visibleAd와 교체된다.
   BannerAd? _pendingAd;
+  int? _pendingRequestId;
 
   /// 표시 중인 광고와 로드 중인 광고가 각각 어떤 폭으로 요청됐는지 기억한다.
   int _visibleWidth = 0;
   int _pendingWidth = 0;
 
   bool _isLoading = false;
+  int _loadGeneration = 0;
+  late final _pro = ProService.instance;
 
   /// 동의가 없어 요청을 보류한 상태. 안내 문구를 "표시 불가"로 바꾸고,
   /// 동의가 생기면 다음 빌드에서 다시 요청하기 위한 표시다.
@@ -65,6 +69,8 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   void initState() {
     super.initState();
     widget.retryTrigger?.addListener(_handleRetryTrigger);
+    AdConsentService.adRequestPermission.addListener(_handleConsentChanged);
+    _pro.addListener(_handleProChanged);
   }
 
   @override
@@ -76,11 +82,36 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
     }
   }
 
+  void _handleProChanged() {
+    if (!mounted) return;
+    if (!_pro.adsAllowed) {
+      _loadGeneration++;
+      _cancelRetry();
+      _cancelLoadTimeout();
+      _retryPolicy.reset();
+      final pending = _pendingAd;
+      final visible = _visibleAd;
+      _pendingAd = null;
+      _visibleAd = null;
+      _isLoading = false;
+      _hasRequestedForCurrentWidth = false;
+      pending?.dispose();
+      if (visible != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => visible.dispose());
+      }
+    }
+    setState(() {});
+  }
+
+  void _handleConsentChanged() {
+    if (mounted) setState(() {});
+  }
+
   /// 재시도 예산을 되돌리고 즉시 한 번 더 요청한다.
   ///
   /// 광고가 이미 떠 있으면 새로고침은 SDK가 맡으므로 아무것도 하지 않는다.
   void _handleRetryTrigger() {
-    if (!mounted || kIsWeb) return;
+    if (!mounted || kIsWeb || !_pro.adsAllowed) return;
     if (_visibleAd != null || _isLoading) return;
     if (_lastRequestedWidth <= 0) return;
 
@@ -94,7 +125,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   }
 
   void _ensureBannerLoaded(int width) {
-    if (!mounted || kIsWeb || width <= 0) return;
+    if (!mounted || kIsWeb || width <= 0 || !_pro.adsAllowed) return;
     if (_lastRequestedWidth != width) {
       _cancelRetry();
       _retryPolicy.reset();
@@ -102,6 +133,10 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
       _hasRequestedForCurrentWidth = false;
     }
 
+    if (_visibleAd != null && _visibleWidth == width) {
+      _hasRequestedForCurrentWidth = true;
+      return;
+    }
     if (_isLoading || _hasRequestedForCurrentWidth) {
       return;
     }
@@ -118,67 +153,112 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
     _hasRequestedForCurrentWidth = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _loadBannerAd(width);
+        _loadBannerAd(_lastRequestedWidth);
       }
     });
   }
 
   Future<void> _loadBannerAd(int width) async {
-    if (!mounted || kIsWeb || width <= 0 || _isLoading) return;
-
-    if (!AdConsentService.canRequestAds) {
-      debugPrint('BannerAd skipped: consent does not allow ad requests');
+    if (!mounted || kIsWeb || width <= 0 || _isLoading || !_pro.adsAllowed) {
       return;
     }
 
+    if (!AdConsentService.canRequestAds) {
+      _hasRequestedForCurrentWidth = false;
+      _consentBlocked = true;
+      return;
+    }
+
+    final generation = _loadGeneration;
     final adUnitId = AdIds.getBannerAdUnitId();
     _isLoading = true;
-    debugPrint(
-      'BannerAd load requested: unitId=$adUnitId width=$width retry=${_retryPolicy.retryCount} testAds=${AdIds.usingTestAds}',
-    );
+    // Callback-driven replacement loads must reserve this width as well.
+    if (width == _lastRequestedWidth) _hasRequestedForCurrentWidth = true;
+    AdSize? adaptiveSize;
+    AdFailureKind? sizeFailure;
+    try {
+      adaptiveSize = await AdSize.getLargeAnchoredAdaptiveBannerAdSize(
+        width,
+      ).timeout(_sizeTimeout, onTimeout: () => null);
+    } catch (_) {
+      sizeFailure = AdFailureKind.platform;
+    }
 
-    final adaptiveSize = await AdSize.getLargeAnchoredAdaptiveBannerAdSize(
-      width,
-    ).timeout(_sizeTimeout, onTimeout: () => null);
-
-    if (!mounted) {
+    if (!mounted || generation != _loadGeneration) return;
+    if (!_pro.adsAllowed) {
       _isLoading = false;
+      return;
+    }
+
+    if (!AdConsentService.canRequestAds) {
+      _isLoading = false;
+      _hasRequestedForCurrentWidth = false;
+      _consentBlocked = true;
+      setState(() {});
       return;
     }
 
     // 적응형 크기를 못 구해도 표준 배너로 요청해 빈 자리를 남기지 않는다.
     final adSize = adaptiveSize ?? AdSize.banner;
     if (adaptiveSize == null) {
-      debugPrint('BannerAd adaptive size unavailable: width=$width');
+      AdDiagnostics.record(
+        AdFormat.banner,
+        AdStage.sizeFallback,
+        failure: sizeFailure,
+      );
     }
 
+    final requestId = AdDiagnostics.beginRequest(AdFormat.banner);
     final ad = BannerAd(
       adUnitId: adUnitId,
       size: adSize,
       request: const AdRequest(),
       listener: BannerAdListener(
-        onAdLoaded: (loadedAd) => _handleAdLoaded(loadedAd),
+        onAdLoaded: (loadedAd) => _handleAdLoaded(loadedAd, requestId),
         onAdFailedToLoad: (failedAd, error) =>
-            _handleAdFailedToLoad(failedAd, error),
-        onAdOpened: (_) {
-          debugPrint('BannerAd opened');
-        },
-        onAdClosed: (_) {
-          debugPrint('BannerAd closed');
-        },
+            _handleAdFailedToLoad(failedAd, error, requestId),
+        onAdImpression: (_) => AdDiagnostics.record(
+          AdFormat.banner,
+          AdStage.impression,
+          requestId: requestId,
+        ),
       ),
     );
 
     _pendingAd = ad;
+    _pendingRequestId = requestId;
     _pendingWidth = width;
     _startLoadTimeout();
-    ad.load();
+    try {
+      await ad.load();
+    } catch (_) {
+      if (!identical(ad, _pendingAd)) return;
+      AdDiagnostics.record(
+        AdFormat.banner,
+        AdStage.loadFailed,
+        requestId: requestId,
+        failure: AdFailureKind.platform,
+      );
+      _cancelLoadTimeout();
+      _isLoading = false;
+      _pendingAd = null;
+      ad.dispose();
+      if (mounted) {
+        setState(() {});
+        _scheduleRetry();
+      }
+    }
   }
 
-  void _handleAdLoaded(Ad ad) {
+  void _handleAdLoaded(Ad ad, int requestId) {
     // 자동 새로고침으로 이미 표시 중인 광고가 다시 채워진 경우.
     if (identical(ad, _visibleAd)) {
-      debugPrint('BannerAd refreshed: unitId=${ad.adUnitId}');
+      AdDiagnostics.record(
+        AdFormat.banner,
+        AdStage.loadSucceeded,
+        requestId: requestId,
+        refreshed: true,
+      );
       return;
     }
 
@@ -198,12 +278,22 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
       return;
     }
 
-    debugPrint('BannerAd loaded: unitId=${ad.adUnitId}');
+    AdDiagnostics.record(
+      AdFormat.banner,
+      AdStage.loadSucceeded,
+      requestId: requestId,
+    );
     final previousAd = _visibleAd;
     setState(() {
       _visibleAd = ad as BannerAd;
       _visibleWidth = loadedWidth;
     });
+
+    AdDiagnostics.record(
+      AdFormat.banner,
+      AdStage.showRequested,
+      requestId: requestId,
+    );
 
     // 교체된 광고는 새 AdWidget이 화면에 올라간 뒤에 정리한다.
     if (previousAd != null) {
@@ -221,13 +311,17 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
     }
   }
 
-  void _handleAdFailedToLoad(Ad ad, LoadAdError error) {
+  void _handleAdFailedToLoad(Ad ad, LoadAdError error, int requestId) {
     // SDK 자동 새로고침이 실패한 경우다. 표시 중인 광고는 이전 소재를 그대로
     // 보여주고 있고 SDK가 다음 주기에 다시 채우므로, 여기서 버리면 멀쩡한
     // 광고가 빈 자리로 바뀐다.
     if (identical(ad, _visibleAd)) {
-      debugPrint(
-        'BannerAd refresh failed, keeping current ad: code=${error.code} message=${error.message}',
+      AdDiagnostics.record(
+        AdFormat.banner,
+        AdStage.loadFailed,
+        requestId: requestId,
+        error: error,
+        refreshed: true,
       );
       return;
     }
@@ -237,20 +331,17 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
       return;
     }
 
-    debugPrint(
-      'BannerAd failed to load: unitId=${ad.adUnitId} code=${error.code} message=${error.message}',
+    AdDiagnostics.record(
+      AdFormat.banner,
+      AdStage.loadFailed,
+      requestId: requestId,
+      error: error,
     );
 
     _cancelLoadTimeout();
     _isLoading = false;
     _pendingAd = null;
     ad.dispose();
-
-    TelemetryService.reportError(
-      error,
-      StackTrace.current,
-      reason: 'banner_ad_load',
-    );
 
     if (!mounted) {
       return;
@@ -270,8 +361,10 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
         return;
       }
 
-      debugPrint(
-        'BannerAd load timed out after ${_loadTimeout.inSeconds}s: width=$_lastRequestedWidth',
+      AdDiagnostics.record(
+        AdFormat.banner,
+        AdStage.timeout,
+        requestId: _pendingRequestId,
       );
       _pendingAd = null;
       _isLoading = false;
@@ -317,7 +410,10 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   @override
   void dispose() {
+    _loadGeneration++;
+    _pro.removeListener(_handleProChanged);
     widget.retryTrigger?.removeListener(_handleRetryTrigger);
+    AdConsentService.adRequestPermission.removeListener(_handleConsentChanged);
     _cancelRetry();
     _cancelLoadTimeout();
     _pendingAd?.dispose();
@@ -327,6 +423,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_pro.adsAllowed) return const SizedBox.shrink();
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth.truncate();
@@ -359,7 +456,10 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
           height: fallbackHeight,
           decoration: BoxDecoration(
             color: AppColors.surfaceMuted(context),
-            border: Border.all(color: AppColors.subtleBorder(context), width: 1),
+            border: Border.all(
+              color: AppColors.subtleBorder(context),
+              width: 1,
+            ),
           ),
           child: Center(
             child: Text(

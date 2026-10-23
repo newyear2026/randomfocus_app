@@ -1,10 +1,13 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
+import 'package:flutter/foundation.dart'
+    show debugPrint, kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'ad_consent_service.dart';
+import 'ad_diagnostics.dart';
+import 'pro_service.dart';
 import 'ad_frequency_policy.dart';
 import 'ad_ids.dart';
 import 'ad_retry_policy.dart';
@@ -13,6 +16,9 @@ import 'telemetry_service.dart';
 class InterstitialAdManager {
   InterstitialAdManager._();
 
+  @visibleForTesting
+  InterstitialAdManager.forTesting();
+
   static final InterstitialAdManager instance = InterstitialAdManager._();
 
   /// 마지막 노출 시각을 보관하는 키. 에포크 밀리초로 저장하므로 기기 표준시가
@@ -20,6 +26,7 @@ class InterstitialAdManager {
   static const String _keyLastShownAt = 'interstitial_last_shown_at';
 
   InterstitialAd? _interstitialAd;
+  int? _interstitialRequestId;
   bool _isLoading = false;
   bool _isShowing = false;
   Timer? _retryTimer;
@@ -29,7 +36,21 @@ class InterstitialAdManager {
 
   bool get isReady => _interstitialAd != null;
 
+  void handleEntitlementChanged() {
+    if (ProService.instance.adsAllowed) return;
+    _cancelRetry();
+    _retryPolicy.reset();
+    final ad = _interstitialAd;
+    _interstitialAd = null;
+    if (ad != null) unawaited(_disposeAfterShow(ad, _interstitialRequestId));
+    _interstitialRequestId = null;
+  }
+
   void preload() {
+    if (!ProService.instance.adsAllowed) {
+      handleEntitlementChanged();
+      return;
+    }
     if (kIsWeb || _isLoading || _interstitialAd != null) {
       return;
     }
@@ -44,34 +65,40 @@ class InterstitialAdManager {
     final adUnitId = AdIds.getInterstitialAdUnitId();
     _isLoading = true;
 
-    debugPrint(
-      'InterstitialAd preload requested: unitId=$adUnitId retry=${_retryPolicy.retryCount} testAds=${AdIds.usingTestAds}',
-    );
+    final requestId = AdDiagnostics.beginRequest(AdFormat.interstitial);
 
     InterstitialAd.load(
       adUnitId: adUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
-          debugPrint('InterstitialAd preloaded: unitId=${ad.adUnitId}');
+          if (!ProService.instance.adsAllowed) {
+            _isLoading = false;
+            unawaited(_disposeAfterShow(ad, requestId));
+            return;
+          }
+          AdDiagnostics.record(
+            AdFormat.interstitial,
+            AdStage.loadSucceeded,
+            requestId: requestId,
+          );
           _interstitialAd?.dispose();
           _interstitialAd = ad;
+          _interstitialRequestId = requestId;
           _isLoading = false;
           _cancelRetry();
           _retryPolicy.reset();
         },
         onAdFailedToLoad: (error) {
-          debugPrint(
-            'InterstitialAd preload failed: unitId=$adUnitId code=${error.code} message=${error.message}',
+          AdDiagnostics.record(
+            AdFormat.interstitial,
+            AdStage.loadFailed,
+            requestId: requestId,
+            error: error,
           );
           _interstitialAd = null;
           _isLoading = false;
-          TelemetryService.reportError(
-            error,
-            StackTrace.current,
-            reason: 'interstitial_ad_load',
-          );
-          _scheduleRetry();
+          if (ProService.instance.adsAllowed) _scheduleRetry();
         },
       ),
     );
@@ -81,12 +108,18 @@ class InterstitialAdManager {
     required VoidCallback onDismissed,
     required VoidCallback onUnavailable,
   }) async {
-    if (kIsWeb) {
+    if (kIsWeb || !ProService.instance.adsAllowed) {
+      handleEntitlementChanged();
       onUnavailable();
       return;
     }
 
     await _restoreFrequencyState();
+    if (!ProService.instance.adsAllowed) {
+      handleEntitlementChanged();
+      onUnavailable();
+      return;
+    }
 
     final ad = _interstitialAd;
     if (ad == null || _isShowing) {
@@ -103,11 +136,7 @@ class InterstitialAdManager {
     // 간격에 걸리면 준비된 광고를 버리지 않고 그대로 들고 간다. 다음 노출
     // 지점에서 곧바로 쓸 수 있다.
     if (!_frequencyPolicy.allowsShowAt(DateTime.now())) {
-      debugPrint(
-        'InterstitialAd suppressed by frequency cap: '
-        'lastShownAt=${_frequencyPolicy.lastShownAt} '
-        'interval=${_frequencyPolicy.minimumInterval.inMinutes}m',
-      );
+      debugPrint('InterstitialAd suppressed by frequency cap');
       unawaited(TelemetryService.logEvent('interstitial_suppressed_by_cap'));
       onUnavailable();
       return;
@@ -115,37 +144,77 @@ class InterstitialAdManager {
 
     _isShowing = true;
     _interstitialAd = null;
+    final requestId = _interstitialRequestId;
+    var finished = false;
+
+    // A platform Future and a native callback can both report the same failure.
+    // Only the first terminal outcome owns cleanup and navigation.
+    void finish({required bool dismissed, AdError? error}) {
+      if (finished) return;
+      finished = true;
+      _isShowing = false;
+      AdDiagnostics.record(
+        AdFormat.interstitial,
+        dismissed ? AdStage.dismissed : AdStage.showFailed,
+        requestId: requestId,
+        error: error,
+        failure: !dismissed && error == null ? AdFailureKind.platform : null,
+      );
+      unawaited(_disposeAfterShow(ad, requestId));
+      preload();
+      if (dismissed) {
+        onDismissed();
+      } else {
+        onUnavailable();
+      }
+    }
 
     ad.fullScreenContentCallback = FullScreenContentCallback(
-      onAdShowedFullScreenContent: (ad) {
-        debugPrint('InterstitialAd showed: unitId=${ad.adUnitId}');
+      onAdShowedFullScreenContent: (_) {
+        if (finished) return;
+        AdDiagnostics.record(
+          AdFormat.interstitial,
+          AdStage.shown,
+          requestId: requestId,
+        );
         unawaited(_recordShown());
       },
-      onAdDismissedFullScreenContent: (ad) {
-        debugPrint('InterstitialAd dismissed: unitId=${ad.adUnitId}');
-        _isShowing = false;
-        ad.dispose();
-        preload();
-        onDismissed();
-      },
-      onAdFailedToShowFullScreenContent: (ad, error) {
-        debugPrint(
-          'InterstitialAd failed to show: unitId=${ad.adUnitId} code=${error.code} message=${error.message}',
+      onAdImpression: (_) {
+        if (finished) return;
+        AdDiagnostics.record(
+          AdFormat.interstitial,
+          AdStage.impression,
+          requestId: requestId,
         );
-        _isShowing = false;
-        ad.dispose();
-        TelemetryService.reportError(
-          error,
-          StackTrace.current,
-          reason: 'interstitial_ad_show',
-        );
-        preload();
-        onUnavailable();
       },
+      onAdDismissedFullScreenContent: (_) => finish(dismissed: true),
+      onAdFailedToShowFullScreenContent: (_, error) =>
+          finish(dismissed: false, error: error),
     );
 
-    debugPrint('InterstitialAd show requested');
-    ad.show();
+    AdDiagnostics.record(
+      AdFormat.interstitial,
+      AdStage.showRequested,
+      requestId: requestId,
+    );
+    try {
+      await ad.show();
+    } catch (_) {
+      finish(dismissed: false);
+    }
+  }
+
+  Future<void> _disposeAfterShow(InterstitialAd ad, int? requestId) async {
+    try {
+      await ad.dispose();
+    } catch (_) {
+      AdDiagnostics.record(
+        AdFormat.interstitial,
+        AdStage.disposeFailed,
+        requestId: requestId,
+        failure: AdFailureKind.platform,
+      );
+    }
   }
 
   /// 저장된 마지막 노출 시각을 한 번만 불러온다.

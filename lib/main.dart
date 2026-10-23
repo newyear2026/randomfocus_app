@@ -5,13 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'models/app_language.dart';
 import 'pages/home_page.dart';
-import 'services/ad_consent_service.dart';
+import 'services/ad_runtime_service.dart';
+import 'services/pro_service.dart';
 import 'services/language_service.dart';
 import 'services/app_localizations.dart';
-import 'services/interstitial_ad_manager.dart';
 import 'services/history_service.dart';
 import 'services/telemetry_service.dart';
 import 'services/screen_tracking_observer.dart';
@@ -50,22 +49,9 @@ void main() async {
     }
   }
 
-  // Google Mobile Ads 초기화 (웹이 아닐 때만)
-  if (!kIsWeb) {
-    try {
-      final canRequestAds = await AdConsentService.requestConsent();
-      await MobileAds.instance.initialize();
-      if (canRequestAds) {
-        InterstitialAdManager.instance.preload();
-      }
-    } catch (error, stackTrace) {
-      await TelemetryService.reportError(
-        error,
-        stackTrace,
-        reason: 'mobile_ads_initialization',
-      );
-    }
-  }
+  // Resolve verified entitlement before initializing or requesting any ads.
+  await ProService.instance.initialize();
+  if (!kIsWeb) await AdRuntimeService.instance.start();
 
   // 언어와 테마는 첫 프레임 전에 읽는다. 나중에 읽으면 앱이 기본값으로 한 번
   // 그려졌다가 사용자가 고른 값으로 바뀌어 화면이 깜빡인다.
@@ -128,6 +114,13 @@ class _MyAppState extends State<MyApp> {
       darkTheme: AppTheme.darkTheme,
       themeMode: _themeMode,
       navigatorObservers: [_screenTracker],
+      builder: ProService.instance.isDebugPreview
+          ? (context, child) => Banner(
+              message: 'PRO PREVIEW',
+              location: BannerLocation.topEnd,
+              child: child!,
+            )
+          : null,
       home: AppUpdateNotice(
         child: HomePage(
           screenTracker: _screenTracker,

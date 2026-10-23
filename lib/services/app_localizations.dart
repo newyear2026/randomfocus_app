@@ -11,11 +11,70 @@ class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations);
   }
 
+  static String text(BuildContext context, String key) =>
+      (of(context) ?? AppLocalizations(const Locale('en'))).translate(key);
+
   static const LocalizationsDelegate<AppLocalizations> delegate =
       _AppLocalizationsDelegate();
 
   static final Map<String, Map<String, String>> _localizedValues = {
     'en': {
+      // Pro phase 1
+      "proTitle": "RandomFocus Pro",
+      "proTagline": "Focus your way",
+      "proAdFree": "Ad-free focus",
+      "proAdFreeDesc": "Keep the timer clear of banner and interstitial ads.",
+      "proCustomTimes": "Times & probabilities",
+      "proCustomTimesDesc":
+          "Choose durations and adjust how often each is selected.",
+      "proPresets": "Focus presets",
+      "proPresetsDesc": "Save, edit and apply your favorite combinations.",
+      "proKeepFree": "Continue with the free timer",
+      "proUnavailable":
+          "Purchases are not available yet. Your free timer and basic history remain available.",
+      "proChecking": "Checking your purchases…",
+      "proPending": "Purchase pending. Pro unlocks after verification.",
+      "proCanceled": "Purchase canceled. Your access has not changed.",
+      "proError":
+          "The purchase could not be verified. Try again or restore purchases.",
+      "proNoPurchases": "No Pro purchase was found.",
+      "proUpgradePrice": "Upgrade · {price}",
+      "proRestore": "Restore purchases",
+      "proPurchaseUnavailable": "Purchase unavailable",
+      "proActive": "Pro is active",
+      "focusChoices": "Focus durations",
+      "focusWeights": "Selection probabilities",
+      "focusAutoAdjust":
+          "Other probabilities adjust automatically. Only selected durations are drawn.",
+      "focusEqualize": "Equalize",
+      "focusSave": "Save settings",
+      "focusAtLeastOne": "Keep at least one duration selected.",
+      "focusTotal": "Total 100%",
+      "focusError": "Could not save your changes. Please try again.",
+      "focusNameError": "Use a unique name with 1–40 characters.",
+      "focusPresetName": "Preset name",
+      "focusNameHint": "Study or Work",
+      "focusNewPreset": "New preset",
+      "focusApply": "Apply",
+      "focusEdit": "Edit",
+      "focusInUse": "In use",
+      "focusPresetEmpty": "Save a combination to use it again with one tap.",
+      "focusPreview":
+          "Preview · Pro is required to save and apply custom settings.",
+      "focusCustomSummary": "Your saved probabilities determine the result.",
+      "focusProNeeded": "Explore Pro",
+      "focusPresetDelete":
+          "Delete this preset? Your current timer will not be affected.",
+      "focusSettingsLoadError":
+          "Saved settings could not be loaded. Try again.",
+      "focusInvalidSaved":
+          "Some saved settings were invalid. Your valid presets are still available.",
+      "focusPresetSave": "Save preset",
+      "focusRetry": "Try again",
+      "focusSingle": "One selected duration",
+      "focusDiscard": "Discard unsaved changes?",
+      "focusDiscardAction": "Discard",
+
       // Navigation
       'wheel': 'Wheel',
       'history': 'History',
@@ -160,6 +219,65 @@ class AppLocalizations {
       'adUnavailable': 'Ad unavailable',
     },
     'es': {
+      // Pro phase 1
+      "proTitle": "RandomFocus Pro",
+      "proTagline": "Concéntrate a tu manera",
+      "proAdFree": "Concentración sin anuncios",
+      "proAdFreeDesc":
+          "Usa el temporizador sin banners ni anuncios intersticiales.",
+      "proCustomTimes": "Tiempos y probabilidades",
+      "proCustomTimesDesc":
+          "Elige duraciones y ajusta la frecuencia de cada una.",
+      "proPresets": "Preajustes de enfoque",
+      "proPresetsDesc": "Guarda, edita y aplica tus combinaciones favoritas.",
+      "proKeepFree": "Continuar con el temporizador gratuito",
+      "proUnavailable":
+          "Las compras aún no están disponibles. El temporizador y el historial básico siguen siendo gratuitos.",
+      "proChecking": "Comprobando tus compras…",
+      "proPending": "Compra pendiente. Pro se activa tras la verificación.",
+      "proCanceled": "Compra cancelada. Tu acceso no ha cambiado.",
+      "proError":
+          "No se pudo verificar la compra. Reintenta o restaura las compras.",
+      "proNoPurchases": "No se encontró ninguna compra de Pro.",
+      "proUpgradePrice": "Mejorar · {price}",
+      "proRestore": "Restaurar compras",
+      "proPurchaseUnavailable": "Compra no disponible",
+      "proActive": "Pro está activo",
+      "focusChoices": "Duraciones de enfoque",
+      "focusWeights": "Probabilidades de selección",
+      "focusAutoAdjust":
+          "Las demás probabilidades se ajustan automáticamente. Solo se sortean las duraciones seleccionadas.",
+      "focusEqualize": "Igualar",
+      "focusSave": "Guardar ajustes",
+      "focusAtLeastOne": "Mantén al menos una duración seleccionada.",
+      "focusTotal": "Total 100 %",
+      "focusError": "No se pudieron guardar los cambios. Inténtalo de nuevo.",
+      "focusNameError": "Usa un nombre único de 1 a 40 caracteres.",
+      "focusPresetName": "Nombre del preajuste",
+      "focusNameHint": "Estudio o Trabajo",
+      "focusNewPreset": "Nuevo preajuste",
+      "focusApply": "Aplicar",
+      "focusEdit": "Editar",
+      "focusInUse": "En uso",
+      "focusPresetEmpty":
+          "Guarda una combinación para volver a usarla con un toque.",
+      "focusPreview":
+          "Vista previa · Necesitas Pro para guardar y aplicar ajustes personalizados.",
+      "focusCustomSummary":
+          "Las probabilidades guardadas determinan el resultado.",
+      "focusProNeeded": "Explorar Pro",
+      "focusPresetDelete":
+          "¿Eliminar este preajuste? Tu temporizador actual no se verá afectado.",
+      "focusSettingsLoadError":
+          "No se pudieron cargar los ajustes guardados. Reintenta.",
+      "focusInvalidSaved":
+          "Algunos ajustes no eran válidos. Tus preajustes válidos siguen disponibles.",
+      "focusPresetSave": "Guardar preajuste",
+      "focusRetry": "Reintentar",
+      "focusSingle": "Una duración seleccionada",
+      "focusDiscard": "¿Descartar los cambios sin guardar?",
+      "focusDiscardAction": "Descartar",
+
       // Navigation
       'wheel': 'Rueda',
       'history': 'Historial',
@@ -308,6 +426,54 @@ class AppLocalizations {
       'adUnavailable': 'Anuncio no disponible',
     },
     'zh': {
+      // Pro phase 1
+      "proTitle": "RandomFocus Pro",
+      "proTagline": "按自己的节奏专注",
+      "proAdFree": "无广告专注",
+      "proAdFreeDesc": "计时器不显示横幅或插屏广告。",
+      "proCustomTimes": "时间与概率",
+      "proCustomTimesDesc": "选择时长并调整各时长被抽中的概率。",
+      "proPresets": "专注预设",
+      "proPresetsDesc": "保存、编辑和应用常用组合。",
+      "proKeepFree": "继续使用免费计时器",
+      "proUnavailable": "购买功能暂未开放。免费计时器和基本记录仍可使用。",
+      "proChecking": "正在检查购买记录…",
+      "proPending": "购买待处理，验证后将开通 Pro。",
+      "proCanceled": "购买已取消，使用权限未改变。",
+      "proError": "无法验证购买，请重试或恢复购买。",
+      "proNoPurchases": "未找到 Pro 购买记录。",
+      "proUpgradePrice": "升级 · {price}",
+      "proRestore": "恢复购买",
+      "proPurchaseUnavailable": "暂时无法购买",
+      "proActive": "Pro 已启用",
+      "focusChoices": "专注时长",
+      "focusWeights": "抽取概率",
+      "focusAutoAdjust": "其他概率会自动调整，只有选中的时长会参与抽取。",
+      "focusEqualize": "平均分配",
+      "focusSave": "保存设置",
+      "focusAtLeastOne": "请至少保留一个时长。",
+      "focusTotal": "合计 100%",
+      "focusError": "无法保存更改，请重试。",
+      "focusNameError": "请使用 1–40 个字符的唯一名称。",
+      "focusPresetName": "预设名称",
+      "focusNameHint": "学习或工作",
+      "focusNewPreset": "新建预设",
+      "focusApply": "应用",
+      "focusEdit": "编辑",
+      "focusInUse": "使用中",
+      "focusPresetEmpty": "保存一个组合，下次即可一键应用。",
+      "focusPreview": "预览 · 保存和应用自定义设置需要 Pro。",
+      "focusCustomSummary": "抽取结果由已保存的概率决定。",
+      "focusProNeeded": "了解 Pro",
+      "focusPresetDelete": "删除此预设？当前计时器不受影响。",
+      "focusSettingsLoadError": "无法加载已保存的设置，请重试。",
+      "focusInvalidSaved": "部分设置无效，有效预设仍可使用。",
+      "focusPresetSave": "保存预设",
+      "focusRetry": "重试",
+      "focusSingle": "已选择一个时长",
+      "focusDiscard": "放弃未保存的更改？",
+      "focusDiscardAction": "放弃",
+
       // Navigation
       'wheel': '转盘',
       'history': '历史',
