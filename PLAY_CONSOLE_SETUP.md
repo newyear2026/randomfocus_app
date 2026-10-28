@@ -240,9 +240,13 @@ RandomFocus - 랜덤 포커스 타이머로 집중력을 높이세요!
 - **전화번호**: [전화번호를 입력하세요] (선택사항)
 
 ### 개인정보 처리방침 URL:
-**필수**: [개인정보 처리방침 URL을 입력하세요]
-- 예: `https://your-website.com/privacy-policy`
-- 또는 GitHub Pages: `https://yourusername.github.io/privacy-policy`
+**필수**: 아래 주소를 쓴다 (앱 내 링크와 동일, `lib/pages/settings_page.dart`)
+
+```
+https://docs.google.com/document/d/e/2PACX-1vShowtzVPBEdPtpYgWt0oFfhj0yz2BTL6Nb0n3NHavgb0giAcQA2TbT4nnL3mEk1ayjrLqHxf1egHqh/pub
+```
+
+앱 내 링크, Play Console, `GOOGLE_PLAY_DESCRIPTION.md`가 같은 주소를 가리켜야 한다.
 
 ### 카테고리:
 - **주 카테고리**: 생산성 (Productivity)

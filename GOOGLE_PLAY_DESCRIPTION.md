@@ -1,254 +1,394 @@
-# Google Play Console - 앱 설명
+# Google Play 등록정보 문안
 
-## 1. 앱 이름 (21/30자)
+Play Console에 **그대로 복사해 붙여 넣는** 문안이다. 로케일마다 독립된 섹션을
+두고, 각 필드는 코드 블록 하나에 담았다.
 
-**RandomFocus**
+## ⚠️ 붙여넣기 규칙
 
-(11자 - 30자 제한 내)
+**한 필드에는 한 언어만 넣는다.**
+
+이 파일의 이전 버전은 한 문서에 한국어·영어·스페인어 설명을 `---`로만
+구분해 두었고, 그 결과 **ko-KR 자세한 설명 필드에 두 언어가 함께 들어가
+라이브로 노출됐다.** 한국어 설명 뒤에 스페인어가 뭉개진 채 이어붙은 상태였다.
+
+- Play Console의 로케일 선택기에서 **대상 언어를 먼저 고른다.**
+- 그 로케일 섹션의 코드 블록 **하나만** 복사한다.
+- 블록 경계 밖의 설명문(이 문서의 해설)은 절대 포함하지 않는다.
+- 붙여넣은 뒤 필드 맨 아래까지 스크롤해 **다른 언어가 섞여 있지 않은지 확인한다.**
+
+## 문안 작성 규칙
+
+- **없는 기능은 쓰지 않는다.** 구현되지 않은 기능을 설명에 넣으면 Play 정책상
+  등록이 거부될 수 있다. "곧 출시 예정" 표기도 쓰지 않는다.
+- 과장하지 않는다. 앱 내 문구(`lib/services/app_localizations.dart`)와 톤을 맞춘다.
+- 번역이 아니라 **로케일별로 쓴다.** 검색어는 언어마다 다르다.
+
+## 현재 구현 기준 (문안의 사실 근거)
+
+| 내용 | 근거 |
+|---|---|
+| 룰렛 25·30·45·50·60·90분 | `lib/models/duration_weights.dart:18` |
+| 하루 2회, 자정 초기화 | `lib/services/spin_storage.dart:6` |
+| 집중 후 10분 휴식 | `lib/services/timer_alert_service.dart` |
+| 시작·종료 알림 **구현됨** | `flutter_local_notifications` |
+| 세션 기록·캘린더 | `lib/pages/history_page.dart` |
+| D-Day 목표 (무료) | `lib/services/dday_goal_service.dart` |
+| 7일 집중 챌린지·배지 | `lib/models/focus_challenge.dart:21` |
+| Pro 1회 구매 | `in_app_purchase`, `GOOGLE_PLAY_BILLING.md` |
+| 지원 언어 ko·en·es·zh | `lib/models/app_language.dart:42` |
+| 로컬 저장, 계정 없음 | `shared_preferences` |
+| 광고 | `google_mobile_ads` |
+
+개인정보 처리방침 URL (앱 내 링크와 동일, `lib/pages/settings_page.dart:262`):
+
+```
+https://docs.google.com/document/d/e/2PACX-1vShowtzVPBEdPtpYgWt0oFfhj0yz2BTL6Nb0n3NHavgb0giAcQA2TbT4nnL3mEk1ayjrLqHxf1egHqh/pub
+```
+
+지원 이메일: `jacobooh7307@gmail.com`
 
 ---
 
-## 2. 간단한 설명 (0/80자)
+# ko-KR (한국어)
 
-**영어 버전:**
-```
-Spin the wheel, focus better! Random timer sessions to boost your productivity.
-```
-(80자)
+## 앱 이름 — 30자 제한
 
-**한국어 버전:**
 ```
-룰렛을 돌려 집중 시간을 선택하세요! 생산성을 높이는 랜덤 타이머 앱입니다.
+RandomFocus - 공부 집중 타이머
 ```
-(47자)
 
-**스페인어 버전:**
+23자. 브랜드명은 LOOPET·Sobrita와 같이 로마자로 유지하고, 뒤에 검색어를 붙였다.
+`공부 타이머`와 `집중 타이머`를 한 번에 받는다.
+
+대안:
+
 ```
-¡Gira la rueda y enfócate mejor! Sesiones de temporizador aleatorias.
+RandomFocus - 집중 타이머 공부 기록
 ```
-(67자)
+
+## 간단한 설명 — 80자 제한
+
+```
+룰렛으로 공부 시간을 정하는 집중 타이머. 포모도로처럼 집중하고 쉬며, 기록으로 남깁니다.
+```
+
+## 자세한 설명 — 4000자 제한
+
+```
+룰렛을 돌려 공부 시간을 정하는 집중 타이머입니다.
+
+타이머를 켜고 "몇 분 할까" 고민하다 시간을 보낸 적이 있다면, 그 결정을 룰렛에 맡겨 보세요. 포모도로처럼 집중과 휴식을 번갈아 하지만, 시간은 룰렛이 정합니다.
+
+
+■ 룰렛으로 집중 시간 정하기
+
+25분, 30분, 45분, 50분, 60분, 90분 중 하나가 무작위로 나옵니다. 룰렛은 하루 2회 돌릴 수 있고 자정에 초기화됩니다. 고민을 줄이고 바로 시작하기 위한 제한입니다.
+
+
+■ 집중 타이머와 10분 휴식
+
+원형 타이머로 남은 시간을 봅니다. 집중 시간이 끝나면 10분 휴식으로 이어지고, 시작과 종료 시점에 알림을 받습니다. 알림은 설정에서 끌 수 있습니다.
+
+
+■ 집중 기록
+
+완료한 세션과 중단한 세션이 모두 저장됩니다. 캘린더에서 날짜별로 확인하고, 이번 달과 오늘의 세션 수·집중 시간을 봅니다.
+
+
+■ D-Day 목표
+
+시험이나 마감처럼 집중해야 할 날을 정해두면 집중 화면에 D-Day가 함께 표시됩니다. 무료로 쓸 수 있습니다.
+
+
+■ 7일 집중 챌린지
+
+집중한 날을 7일 모으면 배지를 받습니다. 연속이 아니어도 됩니다.
+
+
+■ 계정 없이 시작
+
+회원가입이나 로그인이 없습니다. 세션 기록은 기기에 저장되고 개인정보는 수집하지 않습니다. 광고 표시를 위해 광고 ID를 사용합니다(Google Mobile Ads).
+
+
+■ RandomFocus Pro (선택)
+
+1회 구매로 광고를 없애고, 집중 시간과 각 시간이 나올 확률을 직접 정하고, 자주 쓰는 조합을 프리셋으로 저장할 수 있습니다. 구독이 아닙니다. 무료로도 룰렛, 타이머, 기록, D-Day를 모두 쓸 수 있습니다.
+
+
+■ 4개 언어 지원
+
+한국어, 영어, 스페인어, 중국어를 지원합니다. 기기 언어를 자동으로 따르거나 설정에서 직접 고를 수 있습니다.
+
+
+시험 공부, 과제, 업무처럼 "일단 시작"이 어려운 일에 쓰기 좋습니다.
+
+
+개인정보 처리방침: https://docs.google.com/document/d/e/2PACX-1vShowtzVPBEdPtpYgWt0oFfhj0yz2BTL6Nb0n3NHavgb0giAcQA2TbT4nnL3mEk1ayjrLqHxf1egHqh/pub
+문의: jacobooh7307@gmail.com
+```
+
+## 새로운 기능 — 500자 제한
+
+```
+• 한국어를 지원합니다. 기기 언어를 따르거나 설정에서 직접 고를 수 있어요.
+• 중요한 날까지 남은 일수를 세는 D-Day 목표를 추가했어요.
+```
 
 ---
 
-## 3. 자세한 설명 (0/4000자)
+# en-US (English)
 
-### 영어 버전:
+## App name — 30 char limit
 
 ```
-🎯 RandomFocus - Focus with Random Timer Sessions
+RandomFocus - Study Timer
+```
 
-Transform your study and work sessions with RandomFocus, a unique productivity app that adds an element of surprise to your focus time. Spin the wheel to randomly select your study duration and maintain motivation through gamified time management.
+25 characters. Picks up both `study timer` and `focus timer`.
 
-✨ Key Features:
+## Short description — 80 char limit
 
-🎰 Random Time Selection
-Spin the colorful wheel to randomly choose your focus time from 6 different options: 25, 30, 45, 50, 60, or 90 minutes. The element of surprise keeps you motivated and prevents procrastination!
+```
+A focus timer that spins for your study length. Focus, break, and keep a record.
+```
 
-⏱️ Beautiful Focus Timer
-Experience a stunning circular timer with smooth animations. Track your progress visually as you complete each session. When your focus time ends, automatically take a 10-minute break to recharge.
+80 characters.
 
-📊 Progress Tracking
-View all your focus sessions in an elegant calendar interface. See your monthly and daily statistics at a glance. Track completed sessions and stay motivated by watching your progress grow.
+## Full description — 4000 char limit
 
-🌍 Multi-language Support
-Available in English, Spanish, and Chinese. Switch languages anytime from the settings menu.
+```
+A focus timer that picks your study length for you.
 
-📱 Daily Challenge System
-You have 2 spin attempts per day, resetting at midnight. This limitation encourages mindful use and helps you focus on quality over quantity.
+If you have ever burned time deciding how long to work, hand that decision to the wheel. RandomFocus alternates focus and breaks like a pomodoro timer, except the wheel chooses the length.
 
-🎨 Beautiful UI Design
-Enjoy a modern, minimalist interface with smooth gradients and animations. The app uses Material Design 3 principles for an intuitive user experience.
 
-🔔 Smart Notifications
-Get notified when your focus session starts and ends (coming soon).
+■ Spin for your focus time
 
-📈 Session History
-Every completed or stopped session is automatically saved. Review your focus patterns and identify your most productive times.
+You get one of 25, 30, 45, 50, 60 or 90 minutes at random. The wheel gives you 2 spins per day and resets at midnight. The limit is there to cut the deliberating and get you started.
 
-🔒 Privacy First
-All your session data is stored locally on your device. We don't collect personal information. Only advertising IDs are used for ad display (Google Mobile Ads).
 
-💡 Perfect For:
-- Students preparing for exams
-- Professionals working on projects
-- Anyone looking to improve focus and productivity
-- People who want to gamify their study sessions
+■ Focus timer and a 10-minute break
 
-🚀 How It Works:
-1. Open the app and spin the wheel
-2. Get a random focus time (25-90 minutes)
-3. Start your focus session
-4. Complete the session and take a break
-5. Track your progress in the history calendar
+A circular timer shows the time left. When focus ends a 10-minute break follows, and you get a notification at the start and end of each one. Notifications can be turned off in settings.
 
-📱 System Requirements:
-- Android 5.0 (API level 21) or higher
-- Internet connection for ads (optional)
 
-🎯 Why RandomFocus?
-Traditional timer apps can become boring and predictable. RandomFocus adds excitement to your study routine by introducing randomness. You never know what time you'll get, which keeps you engaged and motivated!
+■ Your focus record
 
-The app combines the proven Pomodoro Technique with gamification elements, making productivity fun and engaging. Whether you're studying for exams, working on projects, or just want to improve your focus, RandomFocus is your perfect companion.
+Every session is saved, whether you finished it or stopped early. Browse them by date in the calendar and see your session count and focused time for today and this month.
 
-Download now and start your journey to better focus and productivity!
 
----
+■ D-Day goal
 
-Privacy Policy: https://your-website.com/privacy-policy
+Set the date you are working toward, like an exam or a deadline, and the countdown appears on your focus screen. Free to use.
+
+
+■ 7-day focus challenge
+
+Collect 7 focus days to earn the badge. They do not have to be consecutive.
+
+
+■ Start without an account
+
+No sign-up, no login. Your session history stays on your device and no personal information is collected. An advertising ID is used to show ads (Google Mobile Ads).
+
+
+■ RandomFocus Pro (optional)
+
+A one-time purchase removes ads, lets you choose your own durations and how often each one is drawn, and saves your favorite combinations as presets. Not a subscription. The wheel, timer, history and D-Day goal are all free.
+
+
+■ Four languages
+
+English, Korean, Spanish and Chinese. The app follows your device language, or you can pick one in settings.
+
+
+Useful for exam prep, assignments and work — anything where starting is the hard part.
+
+
+Privacy Policy: https://docs.google.com/document/d/e/2PACX-1vShowtzVPBEdPtpYgWt0oFfhj0yz2BTL6Nb0n3NHavgb0giAcQA2TbT4nnL3mEk1ayjrLqHxf1egHqh/pub
 Support: jacobooh7307@gmail.com
 ```
 
-**문자 수: 약 1,850자 (4000자 제한 내)**
-
----
-
-### 한국어 버전:
+## What's new — 500 char limit
 
 ```
-🎯 RandomFocus - 랜덤 타이머로 집중력 향상
-
-RandomFocus는 집중 시간에 놀라움의 요소를 더하는 독특한 생산성 앱입니다. 룰렛을 돌려 공부 시간을 무작위로 선택하고, 게임화된 시간 관리로 동기를 유지하세요.
-
-✨ 주요 기능:
-
-🎰 랜덤 시간 선택
-화려한 룰렛을 돌려 6가지 옵션(25, 30, 45, 50, 60, 90분) 중에서 무작위로 집중 시간을 선택하세요. 예측 불가능한 요소가 동기를 유지하고 미루는 습관을 방지합니다!
-
-⏱️ 아름다운 집중 타이머
-부드러운 애니메이션이 있는 멋진 원형 타이머를 경험하세요. 각 세션을 완료하면서 시각적으로 진행 상황을 추적하세요. 집중 시간이 끝나면 자동으로 10분 휴식을 취하세요.
-
-📊 진행 상황 추적
-우아한 캘린더 인터페이스에서 모든 집중 세션을 확인하세요. 한눈에 월간 및 일간 통계를 확인하세요. 완료된 세션을 추적하고 진행 상황이 성장하는 것을 보며 동기를 유지하세요.
-
-🌍 다국어 지원
-영어, 스페인어, 중국어로 제공됩니다. 설정 메뉴에서 언제든지 언어를 변경할 수 있습니다.
-
-📱 일일 챌린지 시스템
-하루에 2번의 스핀 기회가 있으며, 자정에 리셋됩니다. 이 제한은 신중한 사용을 장려하고 양보다 질에 집중하도록 도와줍니다.
-
-🎨 아름다운 UI 디자인
-부드러운 그라데이션과 애니메이션이 있는 모던하고 미니멀한 인터페이스를 즐기세요. 앱은 직관적인 사용자 경험을 위해 Material Design 3 원칙을 사용합니다.
-
-🔔 스마트 알림
-집중 세션이 시작되고 끝날 때 알림을 받으세요 (곧 출시 예정).
-
-📈 세션 히스토리
-완료되거나 중단된 모든 세션이 자동으로 저장됩니다. 집중 패턴을 검토하고 가장 생산적인 시간을 식별하세요.
-
-🔒 프라이버시 우선
-모든 세션 데이터는 기기 내부에만 저장됩니다. 개인정보를 수집하지 않습니다. 광고 표시를 위해서만 광고 ID가 사용됩니다 (Google Mobile Ads).
-
-💡 이런 분들께 완벽합니다:
-- 시험 준비를 하는 학생들
-- 프로젝트에 집중하는 전문가들
-- 집중력과 생산성을 향상시키고 싶은 모든 사람
-- 공부 세션을 게임화하고 싶은 사람들
-
-🚀 사용 방법:
-1. 앱을 열고 룰렛을 돌리세요
-2. 무작위 집중 시간(25-90분)을 받으세요
-3. 집중 세션을 시작하세요
-4. 세션을 완료하고 휴식을 취하세요
-5. 히스토리 캘린더에서 진행 상황을 추적하세요
-
-📱 시스템 요구사항:
-- Android 5.0 (API level 21) 이상
-- 광고를 위한 인터넷 연결 (선택사항)
-
-🎯 RandomFocus를 선택하는 이유?
-전통적인 타이머 앱은 지루하고 예측 가능할 수 있습니다. RandomFocus는 무작위성을 도입하여 공부 루틴에 흥미를 더합니다. 어떤 시간을 받을지 모르기 때문에 계속 참여하고 동기를 유지할 수 있습니다!
-
-이 앱은 검증된 포모도로 기법과 게임화 요소를 결합하여 생산성을 재미있고 매력적으로 만듭니다. 시험 공부를 하든, 프로젝트에 집중하든, 아니면 단순히 집중력을 향상시키고 싶든, RandomFocus가 완벽한 동반자입니다.
-
-지금 다운로드하고 더 나은 집중력과 생산성을 향한 여정을 시작하세요!
-
----
-
-개인정보 처리방침: https://your-website.com/privacy-policy
-지원: jacobooh7307@gmail.com
+• Korean is now supported. The app follows your device language, or pick one in settings.
+• Added a D-Day goal that counts the days until a date that matters to you.
 ```
 
-**문자 수: 약 1,750자 (4000자 제한 내)**
-
 ---
 
-### 스페인어 버전:
+# es-419 (Español, Latinoamérica)
+
+## Nombre de la app — límite 30 caracteres
 
 ```
-🎯 RandomFocus - Enfócate con Sesiones de Temporizador Aleatorias
+RandomFocus - Temporizador
+```
 
-Transforma tus sesiones de estudio y trabajo con RandomFocus, una aplicación de productividad única que añade un elemento de sorpresa a tu tiempo de enfoque. Gira la rueda para seleccionar aleatoriamente la duración de tu estudio y mantén la motivación a través de una gestión del tiempo gamificada.
+26 caracteres. `temporizador` es el término de búsqueda principal.
 
-✨ Características Principales:
+## Descripción breve — límite 80 caracteres
 
-🎰 Selección Aleatoria de Tiempo
-Gira la rueda colorida para elegir aleatoriamente tu tiempo de enfoque entre 6 opciones diferentes: 25, 30, 45, 50, 60 u 90 minutos. ¡El elemento de sorpresa te mantiene motivado y previene la procrastinación!
+```
+Temporizador de concentración: la rueda elige cuánto estudias y queda registrado.
+```
 
-⏱️ Hermoso Temporizador de Enfoque
-Experimenta un temporizador circular impresionante con animaciones suaves. Rastrea tu progreso visualmente mientras completas cada sesión. Cuando termine tu tiempo de enfoque, toma automáticamente un descanso de 10 minutos para recargar energías.
+80 caracteres.
 
-📊 Seguimiento de Progreso
-Visualiza todas tus sesiones de enfoque en una elegante interfaz de calendario. Ve tus estadísticas mensuales y diarias de un vistazo. Rastrea las sesiones completadas y mantén la motivación viendo crecer tu progreso.
+## Descripción completa — límite 4000 caracteres
 
-🌍 Soporte Multiidioma
-Disponible en inglés, español y chino. Cambia el idioma en cualquier momento desde el menú de configuración.
+```
+Un temporizador de concentración que elige por ti cuánto estudiar.
 
-📱 Sistema de Desafío Diario
-Tienes 2 intentos de giro por día, que se reinician a medianoche. Esta limitación fomenta el uso consciente y te ayuda a enfocarte en la calidad sobre la cantidad.
+Si alguna vez perdiste tiempo decidiendo cuántos minutos trabajar, déjale esa decisión a la rueda. RandomFocus alterna concentración y descanso como un temporizador pomodoro, solo que la duración la elige la rueda.
 
-🎨 Diseño de UI Hermoso
-Disfruta de una interfaz moderna y minimalista con gradientes suaves y animaciones. La aplicación utiliza los principios de Material Design 3 para una experiencia de usuario intuitiva.
 
-🔔 Notificaciones Inteligentes
-Recibe notificaciones cuando tu sesión de enfoque comience y termine (próximamente).
+■ Gira para elegir tu tiempo
 
-📈 Historial de Sesiones
-Cada sesión completada o detenida se guarda automáticamente. Revisa tus patrones de enfoque e identifica tus momentos más productivos.
+Sale al azar uno de estos tiempos: 25, 30, 45, 50, 60 o 90 minutos. Tienes 2 giros por día y se reinician a medianoche. El límite existe para que dejes de deliberar y empieces.
 
-🔒 Privacidad Primero
-Todos tus datos de sesión se almacenan localmente en tu dispositivo. No recopilamos información personal. Solo se utilizan IDs de publicidad para mostrar anuncios (Google Mobile Ads).
 
-💡 Perfecto Para:
-- Estudiantes preparándose para exámenes
-- Profesionales trabajando en proyectos
-- Cualquiera que busque mejorar el enfoque y la productividad
-- Personas que quieren gamificar sus sesiones de estudio
+■ Temporizador y descanso de 10 minutos
 
-🚀 Cómo Funciona:
-1. Abre la aplicación y gira la rueda
-2. Obtén un tiempo de enfoque aleatorio (25-90 minutos)
-3. Inicia tu sesión de enfoque
-4. Completa la sesión y toma un descanso
-5. Rastrea tu progreso en el calendario de historial
+Un temporizador circular te muestra el tiempo restante. Al terminar la concentración sigue un descanso de 10 minutos, y recibes una notificación al inicio y al final de cada uno. Puedes desactivarlas en ajustes.
 
-📱 Requisitos del Sistema:
-- Android 5.0 (nivel de API 21) o superior
-- Conexión a Internet para anuncios (opcional)
 
-🎯 ¿Por Qué RandomFocus?
-Las aplicaciones de temporizador tradicionales pueden volverse aburridas y predecibles. RandomFocus añade emoción a tu rutina de estudio introduciendo aleatoriedad. ¡Nunca sabes qué tiempo obtendrás, lo que te mantiene comprometido y motivado!
+■ Tu registro de concentración
 
-La aplicación combina la técnica Pomodoro probada con elementos de gamificación, haciendo que la productividad sea divertida y atractiva. Ya sea que estés estudiando para exámenes, trabajando en proyectos, o simplemente quieras mejorar tu enfoque, RandomFocus es tu compañero perfecto.
+Cada sesión queda guardada, la termines o la detengas antes. Revísalas por fecha en el calendario y mira cuántas sesiones y cuánto tiempo acumulaste hoy y este mes.
 
-¡Descarga ahora y comienza tu viaje hacia un mejor enfoque y productividad!
 
----
+■ Meta D-Day
 
-Política de Privacidad: https://your-website.com/privacy-policy
+Define la fecha hacia la que trabajas, como un examen o una entrega, y la cuenta regresiva aparece en tu pantalla de concentración. Es gratis.
+
+
+■ Reto de 7 días
+
+Reúne 7 días de concentración para ganar la insignia. No tienen que ser seguidos.
+
+
+■ Empieza sin cuenta
+
+Sin registro ni inicio de sesión. Tu historial se queda en tu dispositivo y no recopilamos información personal. Se usa un identificador de publicidad para mostrar anuncios (Google Mobile Ads).
+
+
+■ RandomFocus Pro (opcional)
+
+Una compra única quita los anuncios, te deja elegir tus propias duraciones y con qué frecuencia sale cada una, y guardar tus combinaciones favoritas como ajustes preestablecidos. No es una suscripción. La rueda, el temporizador, el historial y la meta D-Day son gratis.
+
+
+■ Cuatro idiomas
+
+Español, inglés, coreano y chino. La app sigue el idioma de tu dispositivo, o puedes elegirlo en ajustes.
+
+
+Útil para preparar exámenes, tareas y trabajo: para todo aquello en que lo difícil es empezar.
+
+
+Política de Privacidad: https://docs.google.com/document/d/e/2PACX-1vShowtzVPBEdPtpYgWt0oFfhj0yz2BTL6Nb0n3NHavgb0giAcQA2TbT4nnL3mEk1ayjrLqHxf1egHqh/pub
 Soporte: jacobooh7307@gmail.com
 ```
 
-**문자 수: 약 1,900자 (4000자 제한 내)**
+## Novedades — límite 500 caracteres
+
+```
+• Ya está disponible en coreano. La app sigue el idioma de tu dispositivo, o puedes elegirlo en ajustes.
+• Nueva meta D-Day: cuenta los días que faltan para una fecha importante.
+```
 
 ---
 
-## 사용 가이드
+# zh-CN (简体中文)
 
-1. **앱 이름**: "RandomFocus" (11자) - 30자 제한 내
-2. **간단한 설명**: 80자 이내로 핵심 기능을 간결하게 설명
-3. **자세한 설명**: 4000자 이내로 앱의 모든 기능과 장점을 상세히 설명
+앱이 `zh`를 지원하는데 중국어 등록정보가 아직 없다. 아래 문안을 그대로 쓴다.
 
-**참고사항**:
-- 개인정보 처리방침 URL은 실제 URL로 교체 필요
-- 지원 이메일: jacobooh7307@gmail.com
-- 실제 앱 스토어 링크로 교체 필요
+## 应用名称 — 限 30 字符
+
+```
+RandomFocus - 专注计时器
+```
+
+## 简短说明 — 限 80 字符
+
+```
+转动转盘决定学习时长的专注计时器。专注、休息、留下记录。
+```
+
+## 完整说明 — 限 4000 字符
+
+```
+一款帮你决定学习时长的专注计时器。
+
+如果你曾经在"该学多久"上纠结到浪费时间，就把这个决定交给转盘。RandomFocus 像番茄钟一样交替专注与休息，只是时长由转盘决定。
+
+
+■ 转动转盘决定专注时长
+
+随机得到 25、30、45、50、60 或 90 分钟中的一个。转盘每天可转 2 次，午夜重置。这个限制是为了让你少纠结、早开始。
+
+
+■ 专注计时与 10 分钟休息
+
+圆形计时器显示剩余时间。专注结束后接 10 分钟休息，每段的开始和结束都会收到通知。通知可以在设置中关闭。
+
+
+■ 专注记录
+
+每次专注都会保存，无论完成还是提前停止。在日历中按日期查看，并了解今天和本月的专注次数与时长。
+
+
+■ D-Day 目标
+
+设定你要冲刺的日期，比如考试或截止日，倒计时就会显示在专注页面上。免费使用。
+
+
+■ 7 日专注挑战
+
+集齐 7 个专注日即可获得徽章，不需要连续。
+
+
+■ 无需账号即可开始
+
+不用注册，也不用登录。专注记录保存在你的设备上，我们不收集个人信息。为展示广告会使用广告标识符（Google Mobile Ads）。
+
+
+■ RandomFocus Pro（可选）
+
+一次性购买即可去除广告，自定义专注时长以及每个时长出现的概率，并把常用组合保存为预设。不是订阅。转盘、计时器、记录和 D-Day 目标都免费。
+
+
+■ 支持四种语言
+
+中文、英文、韩文和西班牙文。应用会自动跟随设备语言，也可以在设置中自行选择。
+
+
+适合备考、作业和工作——凡是"开始最难"的事情。
+
+
+隐私政策: https://docs.google.com/document/d/e/2PACX-1vShowtzVPBEdPtpYgWt0oFfhj0yz2BTL6Nb0n3NHavgb0giAcQA2TbT4nnL3mEk1ayjrLqHxf1egHqh/pub
+支持邮箱: jacobooh7307@gmail.com
+```
+
+## 新功能 — 限 500 字符
+
+```
+• 新增韩文支持。应用会跟随设备语言，也可在设置中自行选择。
+• 新增 D-Day 目标，倒数距离重要日期还有多少天。
+```
+
+---
+
+# 적용 체크리스트
+
+- [ ] ko-KR 자세한 설명 — **기존 내용을 전부 지우고** 위 블록만 붙여넣기
+      (현재 한국어 + 스페인어가 섞여 있다)
+- [ ] ko-KR 앱 이름 — `RandomFocus` → `RandomFocus - 공부 집중 타이머`
+- [ ] ko-KR 간단한 설명 교체
+- [ ] ko-KR 새로운 기능 — 현재 영어로 노출 중, 위 한국어로 교체
+- [ ] en-US 3개 필드 교체
+- [ ] es-419 3개 필드 교체
+- [ ] zh-CN 로케일 **신규 추가** (앱은 지원하지만 등록정보가 없음)
+- [ ] 각 로케일 저장 후 스토어 페이지에서 다른 언어 혼입 여부 확인
+- [ ] 스크린샷은 이번에 건드리지 않는다 — 문안 변경 효과를 분리해 측정한다

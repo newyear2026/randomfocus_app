@@ -25,11 +25,12 @@ void main() {
       expect(AppLanguage.fromCode('en'), AppLanguage.english);
       expect(AppLanguage.fromCode('es'), AppLanguage.spanish);
       expect(AppLanguage.fromCode('zh'), AppLanguage.chinese);
+      expect(AppLanguage.fromCode('ko'), AppLanguage.korean);
     });
 
     test('모르는 코드는 기기 설정으로 되돌린다', () {
       // 지원 목록에서 언어를 뺐을 때 옛 저장값이 앱을 묶어두면 안 된다.
-      expect(AppLanguage.fromCode('ko'), AppLanguage.system);
+      expect(AppLanguage.fromCode('de'), AppLanguage.system);
       expect(AppLanguage.fromCode(''), AppLanguage.system);
     });
 
@@ -83,7 +84,7 @@ void main() {
       expect(
         LanguageService.resolveLocale(
           AppLanguage.system,
-          deviceLocale: const Locale('ko'),
+          deviceLocale: const Locale('de'),
         ),
         const Locale('en'),
       );
@@ -163,13 +164,23 @@ void main() {
     });
 
     testWidgets('지원하지 않는 기기 언어는 영어로 그린다', (tester) async {
-      tester.platformDispatcher.localesTestValue = const [Locale('ko')];
+      tester.platformDispatcher.localesTestValue = const [Locale('de')];
       addTearDown(tester.platformDispatcher.clearLocalesTestValue);
 
       await tester.pumpWidget(buildApp(AppLanguage.system));
       await tester.pumpAndSettle();
 
       expect(find.text('Settings'), findsOneWidget);
+    });
+
+    testWidgets('기기 언어가 한국어면 한국어로 그린다', (tester) async {
+      tester.platformDispatcher.localesTestValue = const [Locale('ko')];
+      addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+
+      await tester.pumpWidget(buildApp(AppLanguage.system));
+      await tester.pumpAndSettle();
+
+      expect(find.text('설정'), findsOneWidget);
     });
 
     testWidgets('고른 언어는 기기 언어를 이긴다', (tester) async {

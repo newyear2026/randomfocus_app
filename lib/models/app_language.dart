@@ -9,7 +9,8 @@ enum AppLanguage {
   system(null),
   english('en'),
   spanish('es'),
-  chinese('zh');
+  chinese('zh'),
+  korean('ko');
 
   const AppLanguage(this.code);
 
@@ -43,6 +44,7 @@ enum AppLanguage {
     Locale('en'),
     Locale('es'),
     Locale('zh'),
+    Locale('ko'),
   ];
 
   /// 선택지에 보여줄 이름.
@@ -60,6 +62,8 @@ enum AppLanguage {
         return 'Español';
       case AppLanguage.chinese:
         return '中文';
+      case AppLanguage.korean:
+        return '한국어';
     }
   }
 
