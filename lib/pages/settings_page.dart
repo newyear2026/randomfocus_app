@@ -7,6 +7,7 @@ import '../services/language_service.dart';
 import '../services/app_localizations.dart';
 import '../services/app_version_service.dart';
 import '../services/theme_service.dart';
+import '../services/dday_goal_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
@@ -19,6 +20,7 @@ import '../widgets/app_screen.dart';
 import '../widgets/app_section_card.dart';
 import '../widgets/privacy_policy_sheet_content.dart';
 import '../widgets/app_update_notice.dart';
+import '../widgets/dday_goal_widget.dart';
 import 'icon_preview_page.dart';
 import 'pro_page.dart';
 import 'focus_settings_page.dart';
@@ -29,12 +31,14 @@ class SettingsPage extends StatefulWidget {
   final Function(AppLanguage)? onLanguageChanged;
   final Function(ThemeMode)? onThemeModeChanged;
   final Future<AppVersion> Function() versionLoader;
+  final DDayGoalService? goalService;
 
   const SettingsPage({
     super.key,
     this.onLanguageChanged,
     this.onThemeModeChanged,
     this.versionLoader = AppVersionService.getCurrentVersion,
+    this.goalService,
   });
 
   @override
@@ -331,6 +335,7 @@ class _SettingsPageState extends State<SettingsPage> {
         children: [
           AppFormSectionHeader(title: l10n?.preferences ?? 'Preferences'),
           _buildGroup(context, [
+            DDaySettingsTile(service: widget.goalService),
             AppInfoTile(
               grouped: true,
               icon: Icons.language,

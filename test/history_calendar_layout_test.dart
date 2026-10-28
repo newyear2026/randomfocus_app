@@ -9,6 +9,7 @@ import 'package:my_first_app/services/app_localizations.dart';
 import 'package:my_first_app/theme/app_text_styles.dart';
 import 'package:my_first_app/widgets/banner_ad_widget.dart';
 import 'package:my_first_app/widgets/app_section_card.dart';
+import 'package:my_first_app/widgets/history_day_detail_section.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -124,7 +125,7 @@ void main() {
     expect(find.text('August 2026'), findsOneWidget);
   });
 
-  testWidgets('history page uses three content layers without banner ad', (
+  testWidgets('history page leads with the challenge card and no banner ad', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({
@@ -155,7 +156,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(BannerAdWidget), findsNothing);
-    expect(find.byType(AppSectionCard), findsNWidgets(3));
+    expect(find.byKey(const ValueKey('focus-challenge-card')), findsOneWidget);
+    // Challenge card, then the calendar and the monthly stats. The selected
+    // day detail is the layer the challenge card pushes below the fold.
+    expect(find.byType(AppSectionCard), findsNWidgets(2));
+    expect(find.byType(HistoryDayDetailSection), findsNothing);
+
+    // Dragged from near the bottom edge: a drag over the calendar is taken
+    // by its own page gesture instead of scrolling the page.
+    await tester.dragFrom(const Offset(196, 820), const Offset(0, -400));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HistoryDayDetailSection), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

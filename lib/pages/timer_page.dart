@@ -12,6 +12,8 @@ import '../services/app_localizations.dart';
 import '../services/interstitial_ad_manager.dart';
 import '../services/telemetry_service.dart';
 import '../services/timer_alert_service.dart';
+import '../services/dday_goal_service.dart';
+import '../services/focus_challenge_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/app_dialogs.dart';
@@ -20,12 +22,15 @@ import '../widgets/banner_ad_widget.dart';
 import '../widgets/timer_header_content.dart';
 import '../widgets/timer_completion_dialog.dart';
 import '../widgets/timer_status_panel.dart';
+import '../widgets/dday_goal_widget.dart';
 
 class TimerPage extends StatefulWidget {
   final Duration focusDuration;
   final Duration breakDuration;
   final Duration completionDialogDuration;
   final TimerAlertController? alertController;
+  final DDayGoalService? goalService;
+  final FocusChallengeService? challengeService;
 
   const TimerPage({
     super.key,
@@ -33,6 +38,8 @@ class TimerPage extends StatefulWidget {
     this.breakDuration = const Duration(minutes: 10),
     this.completionDialogDuration = const Duration(milliseconds: 1500),
     this.alertController,
+    this.goalService,
+    this.challengeService,
   }) : assert(focusDuration > Duration.zero),
        assert(breakDuration > Duration.zero),
        assert(completionDialogDuration > Duration.zero);
@@ -606,6 +613,19 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
         );
       }
 
+      // Counted separately from the history write: losing a session record
+      // should not also cost the user the day they just earned.
+      try {
+        await (widget.challengeService ?? FocusChallengeService.instance)
+            .recordCompletedFocus();
+      } catch (error, stackTrace) {
+        await TelemetryService.reportError(
+          error,
+          stackTrace,
+          reason: 'focus_challenge_record_after_completion',
+        );
+      }
+
       if (!mounted) return;
 
       final breakDeadline = completedDeadline.add(widget.breakDuration);
@@ -806,6 +826,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          DDayGoalWidget(service: widget.goalService),
           Expanded(
             child: TimerStatusPanel(
               stateColor: stateColor,
