@@ -48,6 +48,12 @@ class _RoulettePageState extends State<RoulettePage> {
   late StreamController<int> _wheelController;
   int? _pendingIndex; // 룰렛 결과 (애니메이션 끝난 뒤 사용)
 
+  /// 룰렛이 멈춰 있는 슬라이스. 라벨을 세우는 데만 쓴다 ([_labelAngle]).
+  ///
+  /// [_pendingIndex]와 달리 결과 창을 닫아도 비우지 않는다 — 룰렛은 마지막
+  /// 결과 위치에 그대로 서 있기 때문이다.
+  int _wheelIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -70,6 +76,9 @@ class _RoulettePageState extends State<RoulettePage> {
     if (mounted) {
       setState(() {
         if (_preferences.isLoaded) _preferencesError = false;
+        // 시간 목록이 바뀌면 FortuneWheel의 ValueKey도 바뀌어 룰렛이 처음
+        // 위치부터 다시 그려진다. 라벨 기준도 같이 되돌린다.
+        _wheelIndex = 0;
       });
     }
   }
@@ -116,6 +125,7 @@ class _RoulettePageState extends State<RoulettePage> {
       _spinTimes = times;
       _pendingMinutes = minutes;
       _pendingIndex = index;
+      _wheelIndex = index;
     });
 
     unawaited(TelemetryService.logEvent('roulette_spin_started'));
@@ -128,6 +138,21 @@ class _RoulettePageState extends State<RoulettePage> {
     } else {
       _wheelController.add(index);
     }
+  }
+
+  /// 슬라이스 [index]의 라벨을 세우기 위해 되돌릴 각도.
+  ///
+  /// flutter_fortune_wheel은 라벨을 반지름 방향으로 눕힌다. 멈춰 있을 때
+  /// 라벨에 걸리는 각도는 `2π/n * (index - _wheelIndex) - π/2`이고
+  /// (`_CircleSlices`의 슬라이스 회전 + `_CircleSliceLayout`의 `angle / 2`,
+  /// 기본 `alignment: topCenter`라 정렬 오프셋은 0), 그래서 아래쪽 조각은
+  /// 90도를 넘겨 뒤집힌다 — 60이 "06"으로 읽힌다. 그만큼 되돌려 둔다.
+  ///
+  /// 회전 중에는 룰렛 각도가 계속 변해 라벨도 같이 돌지만, 감속하며 멈출 때
+  /// 제자리로 돌아온다.
+  double _labelAngle(int index) {
+    final anglePerItem = 2 * pi / _times.length;
+    return pi / 2 - anglePerItem * (index - _wheelIndex);
   }
 
   void _handleWheelAnimationEnd() async {
@@ -282,11 +307,13 @@ class _RoulettePageState extends State<RoulettePage> {
                         ),
                       ),
                     ],
-                    items: _times
-                        .map(
-                          (t) => FortuneItem(
+                    items: <FortuneItem>[
+                      for (var i = 0; i < _times.length; i++)
+                        FortuneItem(
+                          child: Transform.rotate(
+                            angle: _labelAngle(i),
                             child: Text(
-                              '$t',
+                              '${_times[i]}',
                               style: const TextStyle(
                                 fontSize: 30,
                                 fontWeight: FontWeight.w600,
@@ -294,14 +321,14 @@ class _RoulettePageState extends State<RoulettePage> {
                                 letterSpacing: 0.5,
                               ),
                             ),
-                            style: FortuneItemStyle(
-                              color: _colorForTime(context, t),
-                              borderColor: AppColors.surface(context),
-                              borderWidth: 2,
-                            ),
                           ),
-                        )
-                        .toList(),
+                          style: FortuneItemStyle(
+                            color: _colorForTime(context, _times[i]),
+                            borderColor: AppColors.surface(context),
+                            borderWidth: 2,
+                          ),
+                        ),
+                    ],
                   ),
           );
         },
