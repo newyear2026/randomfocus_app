@@ -14,20 +14,31 @@
 
 ## Current delivery state
 
-Newest signed Android artifact: **1.4.1 (27)**,
-`build/releases/randomfocus-1.4.1-27.aab` (54,576,733 bytes), built 2026-10-25.
-SHA-256: `40e6a5c49024674868babf05045c5add4c306b32d8096625d925301ef9c05ca5`;
-full record in `build/releases/randomfocus-1.4.1-27.verification.json`
-(billing permission present, certificate matches the previous release,
-bundletool validation passed, not debuggable, production ad unit IDs).
-The earlier `randomfocus-1.4.1-26.aab` is superseded; neither has been uploaded.
+Current signed Android artifact: **1.4.1 (28)**,
+`build/releases/randomfocus-1.4.1-28.aab` (54,638,718 bytes), built 2026-11-05
+from commit `061837c`. SHA-256:
+`2b6d63e2e2d558b44fc48cbac70bd88d640f0677cb04449549b30bb241851794`;
+full record in `build/releases/randomfocus-1.4.1-28.verification.json`.
+Verified: ZIP integrity, version code 28 / version name 1.4.1, the
+`com.android.vending.BILLING` permission, no `debuggable` attribute, the
+production AdMob app ID with no Google test publisher ID in any `libapp.so`,
+no `PRO PREVIEW` ribbon string, and a signer certificate whose SHA-256 matches
+the existing release upload key. Nothing has been uploaded to Play.
 
-**This artifact is stale: do not upload it.** Source has advanced past the
-2026-10-25 build (Korean locale, upright wheel labels, the interstitial/ad
-lifecycle rework, focus session recording). Bump the version code and rebuild
-before any upload. D-Day recovery backs up the unreadable local value before a
-confirmed reset; landscape/large-text timers preserve a square dial and usable
-controls.
+The earlier `randomfocus-1.4.1-26.aab` and `-27.aab` predate the Korean locale,
+the upright wheel labels, the interstitial/ad lifecycle rework and focus session
+recording. They are superseded; do not upload them.
+
+**When building outside `flutter build`, fix `android/local.properties` first.**
+The Flutter Gradle plugin takes `versionCode`/`versionName` from that generated
+file, not from `pubspec.yaml`. Invoking `gradlew :app:bundleRelease` directly
+with a stale `flutter.versionCode` silently stamps the old code onto the bundle,
+which Play then rejects as a duplicate. Confirm the value in
+`build/app/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml`
+after every build.
+
+D-Day recovery backs up the unreadable local value before a confirmed reset;
+landscape/large-text timers preserve a square dial and usable controls.
 
 The dedicated runtime account and the required cloud APIs are configured.
 The user explicitly approved and the agent applied these build-account roles
@@ -73,9 +84,8 @@ purchase verification.
 
 ## Console registration values
 
-Upload a freshly built, billing-enabled AAB to the internal-test draft first
-(the stored artifacts predate the current source — see Current delivery state),
-then open Monetize with Play → Products → One-time products.
+Upload `build/releases/randomfocus-1.4.1-28.aab` to the internal-test draft
+first, then open Monetize with Play → Products → One-time products.
 
 | Field | Value |
 | --- | --- |
@@ -108,9 +118,9 @@ checkout: backend deployment and a successful readiness check are still required
    and **Manage orders and subscriptions**. Also allow viewing this app's product
    catalog if required by the console. Do not grant production-release or
    account-administration privileges.
-4. Rebuild the signed, billing-enabled AAB from current source with a fresh
-   version code, then upload it to an internal-test draft. Complete the normal
-   test-track setup as needed. This is not a production rollout.
+4. Upload the signed, billing-enabled `1.4.1 (28)` AAB to an internal-test
+   draft. Complete the normal test-track setup as needed. This is not a
+   production rollout.
 5. Create and activate the product above and its buy purchase option in
    RandomFocus → Monetize with Play → Products → One-time products. Use USD 2.99
    as the base price and check regional availability/localized prices.
