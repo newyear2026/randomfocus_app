@@ -10,6 +10,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  // This test isolates preview selection from the Android billing channel.
+  // The real Android adapter is covered by google_play_pro_store_test.dart.
+  setUpAll(() {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    try {
+      expect(
+        ProService.instance.isDebugPreview,
+        kDebugMode && const bool.fromEnvironment('RANDOMFOCUS_PRO_PREVIEW'),
+      );
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
   const preview = kDebugMode && bool.fromEnvironment('RANDOMFOCUS_PRO_PREVIEW');
 
   test(

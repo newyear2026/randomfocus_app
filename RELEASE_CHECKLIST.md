@@ -22,16 +22,20 @@
 
 ## ⚠️ 출시 전 필수 작업
 
-### 1. 개인정보 처리방침 URL 설정 (필수!)
-**파일**: `lib/pages/settings_page.dart` (710번째 줄)
+### 1. 개인정보 처리방침 URL 설정 ✅
+**파일**: `lib/pages/settings_page.dart` (`_showPrivacyPolicySheet`)
 
-```dart
-const privacyPolicyUrl = 'https://your-website.com/privacy-policy';
+게시된 Google 문서를 쓰고 있다. 앱 내 링크와 Play Console의 URL, 그리고
+`GOOGLE_PLAY_DESCRIPTION.md`의 각 로케일 설명문이 **같은 주소를 가리켜야 한다.**
+
+```
+https://docs.google.com/document/d/e/2PACX-1vShowtzVPBEdPtpYgWt0oFfhj0yz2BTL6Nb0n3NHavgb0giAcQA2TbT4nnL3mEk1ayjrLqHxf1egHqh/pub
 ```
 
-**작업**: 실제 개인정보 처리방침 URL로 변경
-- Google Ads를 사용하는 앱은 개인정보 처리방침이 **필수**입니다
-- 웹사이트에 개인정보 처리방침 페이지를 만들고 URL을 업데이트하세요
+- Google Ads를 쓰는 앱은 개인정보 처리방침이 **필수**다
+- 주소를 바꾸면 위 세 곳을 함께 고친다
+- 남은 과제: 게시된 Google 문서는 로케일별 버전을 나눌 수 없다. 자체 도메인에
+  `/privacy`를 두면 ko·en·es·zh를 각각 제공할 수 있다
 
 ### 2. 앱 아이콘 설정 (권장)
 **현재 상태**: `assets/images/app_icon.png` 파일이 없음

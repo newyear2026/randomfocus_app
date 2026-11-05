@@ -13,6 +13,7 @@ import '../widgets/app_loading_view.dart';
 import '../widgets/app_screen.dart';
 import '../widgets/app_section_card.dart';
 import '../widgets/app_stat_tile.dart';
+import '../widgets/focus_challenge_card.dart';
 import '../widgets/history_day_detail_section.dart';
 
 class HistoryPage extends StatefulWidget {
@@ -202,6 +203,8 @@ class _HistoryPageState extends State<HistoryPage> {
           : ListView(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
               children: [
+                const FocusChallengeCard(),
+                const SizedBox(height: AppSpacing.md),
                 AppSectionCard(
                   radius: AppRadius.cardLarge,
                   padding: const EdgeInsets.symmetric(vertical: 8),

@@ -45,7 +45,11 @@ Primary loop:
 ### Timer
 
 - During active focus, the UI should reduce escape routes.
+- A saved D-Day goal appears above the timer. Tapping it opens the same editor
+  as Settings; editing or deleting the goal does not pause or reset the timer.
 - The timer value is the dominant element on screen.
+- Keep the dial square in short viewports. Wide timer panels place controls
+  beside the dial; limited heights scroll without overlapping labels/actions.
 - State labels must always explain whether the user is focusing, on break, or paused.
 - Leaving an in-progress timer should require confirmation.
 - Completion should transition into break smoothly without extra friction.
@@ -55,10 +59,20 @@ Primary loop:
 - Users should be able to understand progress at a glance.
 - Calendar marks should indicate meaningful completed activity.
 - Summary stats should be compact and immediately scannable.
+- The focus challenge leads the tab: seven unnumbered dots, because the days
+  are collected in any order and numbering them reads as a breakable streak.
+  A day counts once, a stopped session never counts, and the badge is awarded
+  once and then frozen. Progress is stored apart from the session history, so
+  clearing history never removes a day already earned.
 
 ### Settings
 
 - Rows should be easy to scan and tap.
+- D-Day goal stores one local goal name and calendar date. Cancel leaves the
+  saved goal unchanged; deleting requires confirmation. The countdown shows
+  `D-n` before the date, `D-Day` on it, and `D+n` afterward.
+- Unreadable goal data offers a confirmed reset, with a local backup made before
+  removal. Temporary storage failures offer retry; they must not clear data.
 - Labels should be plain-language, not technical.
 - Legal/help/about information should be grouped with the same interaction pattern.
 

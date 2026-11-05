@@ -1,3 +1,5 @@
+import com.android.build.api.variant.LibraryAndroidComponentsExtension
+
 allprojects {
     repositories {
         google()
@@ -15,6 +17,19 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+// The existing share_plus release declares API 33. Newer AGP validates library
+// AAR metadata too, so compile that library against our installed Android SDK
+// without changing its Dart API, target SDK, or minimum supported devices.
+subprojects {
+    if (name == "share_plus") {
+        pluginManager.withPlugin("com.android.library") {
+            extensions.getByType<LibraryAndroidComponentsExtension>().finalizeDsl {
+                it.compileSdk = 36
+            }
+        }
+    }
+}
+
 subprojects {
     project.evaluationDependsOn(":app")
 }

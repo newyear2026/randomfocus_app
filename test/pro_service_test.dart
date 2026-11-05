@@ -12,7 +12,8 @@ void main() {
     'unconfigured production service cannot buy, restore, or trust local Pro flags',
     () async {
       SharedPreferences.setMockInitialValues({'is_pro': true, 'premium': true});
-      final service = ProService.instance;
+      final store = FakeProStore(configured: false);
+      final service = ProService.forTesting(store);
       await service.initialize();
       await service.purchase();
       await service.restore();
@@ -22,6 +23,8 @@ void main() {
       expect(service.product, isNull);
       expect(service.state, ProPurchaseState.unavailable);
       expect(service.adsAllowed, true);
+      service.dispose();
+      await store.dispose();
     },
   );
   test(

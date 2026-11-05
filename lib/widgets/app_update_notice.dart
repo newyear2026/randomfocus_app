@@ -64,6 +64,8 @@ Future<void> showAppUpdateNotice(BuildContext context, AppVersion version) {
       children: [
         Text(l10n?.translate('whatsNew') ?? "What's new"),
         const SizedBox(height: 8),
+        _ReleaseNote(text: l10n?.translate('releaseNoteFocusChallenge') ?? ''),
+        _ReleaseNote(text: l10n?.translate('releaseNoteDDay') ?? ''),
         _ReleaseNote(text: l10n?.translate('releaseNoteTimer') ?? ''),
         _ReleaseNote(text: l10n?.translate('releaseNoteNotice') ?? ''),
         _ReleaseNote(text: l10n?.translate('releaseNoteVersion') ?? ''),

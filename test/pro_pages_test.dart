@@ -76,7 +76,12 @@ void main() {
   testWidgets(
     'unconfigured upgrade is honest and contains no active checkout or price',
     (tester) async {
-      final free = ProService.instance;
+      final unconfigured = FakeProStore(configured: false);
+      final free = ProService.forTesting(unconfigured);
+      addTearDown(() async {
+        free.dispose();
+        await unconfigured.dispose();
+      });
       await free.initialize();
       await tester.pumpWidget(localized(ProPage(service: free)));
       await tester.pumpAndSettle();

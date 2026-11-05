@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -49,10 +50,6 @@ void main() async {
     }
   }
 
-  // Resolve verified entitlement before initializing or requesting any ads.
-  await ProService.instance.initialize();
-  if (!kIsWeb) await AdRuntimeService.instance.start();
-
   // 언어와 테마는 첫 프레임 전에 읽는다. 나중에 읽으면 앱이 기본값으로 한 번
   // 그려졌다가 사용자가 고른 값으로 바뀌어 화면이 깜빡인다.
   final initialLanguage = await LanguageService.getSavedLanguage();
@@ -61,6 +58,14 @@ void main() async {
   runApp(
     MyApp(initialLanguage: initialLanguage, initialThemeMode: initialThemeMode),
   );
+  // Store/network delays must not prevent the free timer from opening. Ads
+  // remain gated until ownership has been resolved, including on cold starts.
+  unawaited(_initializeMonetization());
+}
+
+Future<void> _initializeMonetization() async {
+  await ProService.instance.initialize();
+  if (!kIsWeb) await AdRuntimeService.instance.start();
 }
 
 class MyApp extends StatefulWidget {
@@ -77,10 +82,29 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   final _screenTracker = ScreenTrackingObserver();
   late AppLanguage _language = widget.initialLanguage;
   late ThemeMode _themeMode = widget.initialThemeMode;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(ProService.instance.refresh());
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
   void _changeLanguage(AppLanguage language) {
     setState(() {

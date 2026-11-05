@@ -67,4 +67,27 @@ void main() {
     final histories = await HistoryService.getHistories();
     expect(histories.map((h) => h.sessionId), ['s0', 's1', 'late', 's2']);
   });
+  test(
+    'concurrent checkpoints and completion replace only their session',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final completed = _session(1);
+      final checkpoint = TimerHistory(
+        sessionId: completed.sessionId,
+        dateTime: completed.dateTime,
+        selectedTime: 25,
+        actualTime: 2,
+        status: SessionStatus.stopped,
+      );
+      await Future.wait([
+        HistoryService.saveHistory(_session(2)),
+        HistoryService.saveHistory(checkpoint),
+        HistoryService.saveHistory(completed),
+      ]);
+      final histories = await HistoryService.getHistories();
+      expect(histories.map((h) => h.sessionId), ['s1', 's2']);
+      expect(histories.first.status, SessionStatus.completed);
+      expect(histories.first.actualTime, 1500);
+    },
+  );
 }
