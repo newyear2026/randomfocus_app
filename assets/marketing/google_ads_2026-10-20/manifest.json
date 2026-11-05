@@ -1,0 +1,72 @@
+[
+  {
+    "file": "images/01_spin_into_focus_square_1200x1200.png",
+    "concept": "Spin into focus",
+    "width": 1200,
+    "height": 1200,
+    "bytes": 1566124
+  },
+  {
+    "file": "images/02_study_moment_square_1200x1200.png",
+    "concept": "Study session",
+    "width": 1200,
+    "height": 1200,
+    "bytes": 1724611
+  },
+  {
+    "file": "images/03_focus_timer_square_1200x1200.png",
+    "concept": "Room for focus",
+    "width": 1200,
+    "height": 1200,
+    "bytes": 1512656
+  },
+  {
+    "file": "images/04_coffee_and_focus_square_1200x1200.png",
+    "concept": "Coffee & focus",
+    "width": 1200,
+    "height": 1200,
+    "bytes": 1984343
+  },
+  {
+    "file": "images/05_spin_to_timer_landscape_1200x628.png",
+    "concept": "One spin",
+    "width": 1200,
+    "height": 628,
+    "bytes": 891964
+  },
+  {
+    "file": "images/06_deep_work_landscape_1200x628.png",
+    "concept": "Deep work",
+    "width": 1200,
+    "height": 628,
+    "bytes": 1105133
+  },
+  {
+    "file": "images/07_desk_essentials_landscape_1200x628.png",
+    "concept": "Desk essentials",
+    "width": 1200,
+    "height": 628,
+    "bytes": 1240894
+  },
+  {
+    "file": "images/08_let_the_wheel_decide_portrait_1200x1500.png",
+    "concept": "Let the wheel decide",
+    "width": 1200,
+    "height": 1500,
+    "bytes": 1950907
+  },
+  {
+    "file": "images/09_focus_and_break_portrait_1200x1500.png",
+    "concept": "Focus & recharge",
+    "width": 1200,
+    "height": 1500,
+    "bytes": 2084835
+  },
+  {
+    "file": "images/10_daily_focus_portrait_1200x1500.png",
+    "concept": "Daily focus ritual",
+    "width": 1200,
+    "height": 1500,
+    "bytes": 2165431
+  }
+]
