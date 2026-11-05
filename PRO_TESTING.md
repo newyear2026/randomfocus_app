@@ -1,7 +1,10 @@
 # Trying Pro locally
 
-Billing is not configured yet. This preview is for duration weights, named
-presets and the ad-free timer. It does not test App Store payments or restoration.
+The Android one-time purchase implementation and verification server are in
+place. Live Google Play sales still require the setup and live checks in
+[GOOGLE_PLAY_BILLING.md](GOOGLE_PLAY_BILLING.md). This debug preview is for duration
+weights, named presets and the ad-free timer. It does not test real payments or
+restoration. App Store billing remains unconfigured.
 
 From this repository, start a **debug** build with an explicit preview define:
 

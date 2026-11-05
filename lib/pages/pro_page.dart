@@ -56,6 +56,8 @@ class _ProPageState extends State<ProPage> {
                 style: Theme.of(context).textTheme.headlineSmall,
                 textAlign: TextAlign.center,
               ),
+              const SizedBox(height: 8),
+              Text(t('proOneTime'), textAlign: TextAlign.center),
               const SizedBox(height: 24),
               for (final feature in [
                 (Icons.block, 'proAdFree', 'proAdFreeDesc'),

@@ -1,0 +1,12 @@
+{
+  "name": "randomfocus-billing",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "engines": { "node": "22" },
+  "scripts": { "test": "node --test", "check": "node --check src/index.js && node --check src/play_billing.js" },
+  "dependencies": {
+    "firebase-functions": "^6.4.0",
+    "google-auth-library": "^10.0.0"
+  }
+}

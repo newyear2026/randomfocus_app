@@ -2,47 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-enum ProPurchaseState {
-  checking,
-  unavailable,
-  ready,
-  pending,
-  purchased,
-  restored,
-  canceled,
-  error,
-  noPurchases,
-}
+import 'google_play_pro_store.dart';
+import 'pro_store.dart';
 
-class ProProduct {
-  ProProduct({required this.id, required this.localizedPrice}) {
-    if (id.trim().isEmpty || localizedPrice.trim().isEmpty) {
-      throw ArgumentError('Store product and localized price are required');
-    }
-  }
-  final String id;
-  final String localizedPrice;
-}
+export 'pro_store.dart';
 
-/// Results at this boundary must come from a real receipt/transaction verifier.
-/// Store callbacks alone, a local preference, and a client toggle are not proof.
-class ProStoreResult {
-  const ProStoreResult(this.state, {this.product, this.verifiedEntitlement});
-  final ProPurchaseState state;
-  final ProProduct? product;
-  final bool? verifiedEntitlement;
-}
-
-abstract interface class ProStore {
-  bool get isConfigured;
-  Stream<ProStoreResult> get updates;
-  Future<ProStoreResult> load();
-  Future<ProStoreResult> purchase(ProProduct product);
-  Future<ProStoreResult> restore();
-}
-
-/// Deliberately cannot sell, restore or grant Pro until a verified store adapter
-/// and its real product are configured. No placeholder price or product ID.
+/// Other stores stay unavailable until they have their own verified adapter.
 class _UnavailableProStore implements ProStore {
   const _UnavailableProStore();
   @override
@@ -88,8 +53,12 @@ class ProService extends ChangeNotifier {
   static ProService _instance = ProService._(
     kDebugMode && const bool.fromEnvironment('RANDOMFOCUS_PRO_PREVIEW')
         ? const _DebugPreviewProStore()
-        : const _UnavailableProStore(),
+        : _productionStore(),
   );
+  static ProStore _productionStore() =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android
+      ? GooglePlayProStore()
+      : const _UnavailableProStore();
   static ProService get instance => _instance;
 
   @visibleForTesting
@@ -173,6 +142,16 @@ class ProService extends ChangeNotifier {
     await _perform(_store.restore);
   }
 
+  /// Recheck Google Play when returning to the app (including pending orders
+  /// completed outside the app and purchases revoked/refunded in Play).
+  Future<void> refresh() async {
+    // Pending payments can finish outside the app without a live callback.
+    if (!_initialized || state == ProPurchaseState.checking || isDebugPreview) {
+      return;
+    }
+    await _perform(_store.load);
+  }
+
   Future<void> _perform(Future<ProStoreResult> Function() operation) async {
     final generation = ++_generation;
     ProStoreResult result;
@@ -205,6 +184,7 @@ class ProService extends ChangeNotifier {
           ProPurchaseState.purchased,
           ProPurchaseState.restored,
           ProPurchaseState.noPurchases,
+          ProPurchaseState.unavailable,
         }.contains(result.state) &&
         result.verifiedEntitlement != null) {
       _hasPro = result.verifiedEntitlement!;
@@ -218,6 +198,7 @@ class ProService extends ChangeNotifier {
     _disposed = true;
     _generation++;
     unawaited(_subscription?.cancel());
+    if (_store is GooglePlayProStore) unawaited(_store.dispose());
     super.dispose();
   }
 }
