@@ -14,10 +14,18 @@ import 'ad_retry_policy.dart';
 import 'telemetry_service.dart';
 
 class InterstitialAdManager {
-  InterstitialAdManager._();
+  InterstitialAdManager._()
+    : loadTimeout = const Duration(seconds: 30),
+      showTimeout = const Duration(minutes: 1);
 
   @visibleForTesting
-  InterstitialAdManager.forTesting();
+  InterstitialAdManager.forTesting({
+    this.loadTimeout = const Duration(seconds: 30),
+    this.showTimeout = const Duration(minutes: 1),
+  });
+
+  final Duration loadTimeout;
+  final Duration showTimeout;
 
   static final InterstitialAdManager instance = InterstitialAdManager._();
 
@@ -30,6 +38,12 @@ class InterstitialAdManager {
   bool _isLoading = false;
   bool _isShowing = false;
   Timer? _retryTimer;
+  Timer? _loadTimer;
+  Timer? _showTimer;
+  Completer<void>? _showInvocation;
+  int _loadGeneration = 0;
+  bool _disposed = false;
+  final _disposedAds = Expando<bool>();
   final _retryPolicy = AdRetryPolicy.interstitial();
   final _frequencyPolicy = AdFrequencyPolicy();
   bool _frequencyRestored = false;
@@ -38,6 +52,14 @@ class InterstitialAdManager {
 
   void handleEntitlementChanged() {
     if (ProService.instance.adsAllowed) return;
+    _discardPreload();
+  }
+
+  void _discardPreload() {
+    _loadGeneration++;
+    _loadTimer?.cancel();
+    _loadTimer = null;
+    _isLoading = false;
     _cancelRetry();
     _retryPolicy.reset();
     final ad = _interstitialAd;
@@ -46,12 +68,22 @@ class InterstitialAdManager {
     _interstitialRequestId = null;
   }
 
+  void dispose() {
+    _disposed = true;
+    _showTimer?.cancel();
+    final invocation = _showInvocation;
+    if (invocation != null && !invocation.isCompleted) invocation.complete();
+    _showInvocation = null;
+    _discardPreload();
+  }
+
   void preload() {
+    if (_disposed) return;
     if (!ProService.instance.adsAllowed) {
       handleEntitlementChanged();
       return;
     }
-    if (kIsWeb || _isLoading || _interstitialAd != null) {
+    if (kIsWeb || _isShowing || _isLoading || _interstitialAd != null) {
       return;
     }
 
@@ -66,57 +98,92 @@ class InterstitialAdManager {
     _isLoading = true;
 
     final requestId = AdDiagnostics.beginRequest(AdFormat.interstitial);
+    final generation = ++_loadGeneration;
 
-    InterstitialAd.load(
-      adUnitId: adUnitId,
-      request: const AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          if (!ProService.instance.adsAllowed) {
-            _isLoading = false;
-            unawaited(_disposeAfterShow(ad, requestId));
-            return;
-          }
-          AdDiagnostics.record(
-            AdFormat.interstitial,
-            AdStage.loadSucceeded,
-            requestId: requestId,
-          );
-          _interstitialAd?.dispose();
-          _interstitialAd = ad;
-          _interstitialRequestId = requestId;
-          _isLoading = false;
-          _cancelRetry();
-          _retryPolicy.reset();
-        },
-        onAdFailedToLoad: (error) {
-          AdDiagnostics.record(
-            AdFormat.interstitial,
-            AdStage.loadFailed,
-            requestId: requestId,
-            error: error,
-          );
-          _interstitialAd = null;
-          _isLoading = false;
-          if (ProService.instance.adsAllowed) _scheduleRetry();
-        },
-      ),
-    );
+    bool finishLoad() {
+      if (_disposed || !_isLoading || generation != _loadGeneration) {
+        return false;
+      }
+      _loadTimer?.cancel();
+      _loadTimer = null;
+      _isLoading = false;
+      return true;
+    }
+
+    void fail({LoadAdError? error, bool timedOut = false}) {
+      if (!finishLoad()) return;
+      AdDiagnostics.record(
+        AdFormat.interstitial,
+        timedOut ? AdStage.timeout : AdStage.loadFailed,
+        requestId: requestId,
+        error: error,
+        failure: error == null && !timedOut ? AdFailureKind.platform : null,
+      );
+      if (ProService.instance.adsAllowed && AdConsentService.canRequestAds) {
+        _scheduleRetry();
+      }
+    }
+
+    _loadTimer = Timer(loadTimeout, () => fail(timedOut: true));
+
+    Future<void> request() async {
+      try {
+        await InterstitialAd.load(
+          adUnitId: adUnitId,
+          request: const AdRequest(),
+          adLoadCallback: InterstitialAdLoadCallback(
+            onAdLoaded: (ad) {
+              if (!finishLoad()) {
+                if (!identical(ad, _interstitialAd)) {
+                  unawaited(_disposeAfterShow(ad, requestId));
+                }
+                return;
+              }
+              if (!ProService.instance.adsAllowed ||
+                  !AdConsentService.canRequestAds) {
+                unawaited(_disposeAfterShow(ad, requestId));
+                return;
+              }
+              AdDiagnostics.record(
+                AdFormat.interstitial,
+                AdStage.loadSucceeded,
+                requestId: requestId,
+              );
+              _interstitialAd = ad;
+              _interstitialRequestId = requestId;
+              _isLoading = false;
+              _cancelRetry();
+              _retryPolicy.reset();
+            },
+            onAdFailedToLoad: (error) => fail(error: error),
+          ),
+        );
+      } catch (_) {
+        fail();
+      }
+    }
+
+    unawaited(request());
   }
 
   Future<void> show({
     required VoidCallback onDismissed,
     required VoidCallback onUnavailable,
   }) async {
-    if (kIsWeb || !ProService.instance.adsAllowed) {
-      handleEntitlementChanged();
+    if (_disposed ||
+        kIsWeb ||
+        !ProService.instance.adsAllowed ||
+        !AdConsentService.canRequestAds) {
+      _discardPreload();
       onUnavailable();
       return;
     }
 
     await _restoreFrequencyState();
-    if (!ProService.instance.adsAllowed) {
-      handleEntitlementChanged();
+    if (_disposed ||
+        !ProService.instance.adsAllowed ||
+        !AdConsentService.canRequestAds) {
+      _discardPreload();
       onUnavailable();
       return;
     }
@@ -145,13 +212,36 @@ class InterstitialAdManager {
     _isShowing = true;
     _interstitialAd = null;
     final requestId = _interstitialRequestId;
-    var finished = false;
+    var answered = false;
+    var closed = false;
+    var shown = false;
+    var impressionRecorded = false;
+    final invocation = Completer<void>();
+    _showInvocation = invocation;
 
-    // A platform Future and a native callback can both report the same failure.
-    // Only the first terminal outcome owns cleanup and navigation.
-    void finish({required bool dismissed, AdError? error}) {
-      if (finished) return;
-      finished = true;
+    void completeInvocation() {
+      if (!invocation.isCompleted) invocation.complete();
+    }
+
+    void answer({required bool dismissed}) {
+      if (answered) return;
+      answered = true;
+      _showTimer?.cancel();
+      _showTimer = null;
+      completeInvocation();
+      if (_disposed) return;
+      if (dismissed) {
+        onDismissed();
+      } else {
+        onUnavailable();
+      }
+    }
+
+    // UI completion and native presentation ownership are separate. A timeout
+    // must not dispose a possibly visible ad or allow another one to overlap.
+    void close({required bool dismissed, AdError? error}) {
+      if (closed) return;
+      closed = true;
       _isShowing = false;
       AdDiagnostics.record(
         AdFormat.interstitial,
@@ -162,16 +252,13 @@ class InterstitialAdManager {
       );
       unawaited(_disposeAfterShow(ad, requestId));
       preload();
-      if (dismissed) {
-        onDismissed();
-      } else {
-        onUnavailable();
-      }
+      answer(dismissed: dismissed);
     }
 
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (_) {
-        if (finished) return;
+        if (closed || shown) return;
+        shown = true;
         AdDiagnostics.record(
           AdFormat.interstitial,
           AdStage.shown,
@@ -180,31 +267,58 @@ class InterstitialAdManager {
         unawaited(_recordShown());
       },
       onAdImpression: (_) {
-        if (finished) return;
+        if (closed || impressionRecorded) return;
+        impressionRecorded = true;
         AdDiagnostics.record(
           AdFormat.interstitial,
           AdStage.impression,
           requestId: requestId,
         );
       },
-      onAdDismissedFullScreenContent: (_) => finish(dismissed: true),
+      onAdDismissedFullScreenContent: (_) => close(dismissed: true),
       onAdFailedToShowFullScreenContent: (_, error) =>
-          finish(dismissed: false, error: error),
+          close(dismissed: false, error: error),
     );
 
+    _showTimer = Timer(showTimeout, () {
+      if (answered) return;
+      AdDiagnostics.record(
+        AdFormat.interstitial,
+        AdStage.timeout,
+        requestId: requestId,
+      );
+      answer(dismissed: false);
+    });
     AdDiagnostics.record(
       AdFormat.interstitial,
       AdStage.showRequested,
       requestId: requestId,
     );
-    try {
-      await ad.show();
-    } catch (_) {
-      finish(dismissed: false);
+    Future<void> present() async {
+      try {
+        await ad.show();
+      } catch (_) {
+        if (shown) {
+          // A platform error after showing is not a native close acknowledgement.
+          answer(dismissed: false);
+        } else {
+          close(dismissed: false);
+        }
+      } finally {
+        completeInvocation();
+      }
     }
+
+    unawaited(present());
+    // Keep the existing invocation Future semantics, but also release a hung
+    // platform call on the UI deadline or manager disposal.
+    await invocation.future;
+    if (identical(_showInvocation, invocation)) _showInvocation = null;
   }
 
   Future<void> _disposeAfterShow(InterstitialAd ad, int? requestId) async {
+    if (_disposedAds[ad] == true) return;
+    _disposedAds[ad] = true;
     try {
       await ad.dispose();
     } catch (_) {

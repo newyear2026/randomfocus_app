@@ -14,11 +14,37 @@ class HistoryService {
   /// 남는다.
   static const int maxStoredSessions = 2000;
 
-  /// 히스토리 저장
-  static Future<void> saveHistory(TimerHistory history) async {
+  static Future<void>? _pendingSave;
+
+  /// Replace a pause checkpoint with the latest state of the same session.
+  /// Serialize saves because preferences stores the entire list in one value.
+  static Future<void> saveHistory(TimerHistory history) {
+    final previous = _pendingSave;
+    late final Future<void> write;
+    Future<void> run() async {
+      if (previous != null) {
+        try {
+          await previous;
+        } catch (_) {
+          // Allow a later write after a failed save.
+        }
+      }
+      try {
+        await _writeHistory(history);
+      } finally {
+        if (identical(_pendingSave, write)) _pendingSave = null;
+      }
+    }
+
+    write = run();
+    return _pendingSave = write;
+  }
+
+  static Future<void> _writeHistory(TimerHistory history) async {
     final prefs = await SharedPreferences.getInstance();
     final histories = await getHistories();
 
+    histories.removeWhere((entry) => entry.sessionId == history.sessionId);
     histories.add(history);
 
     // 상한을 넘으면 가장 오래된 기록부터 버린다. 세션은 보통 최신순으로
@@ -31,7 +57,9 @@ class HistoryService {
 
     // JSON으로 변환하여 저장
     final jsonList = histories.map((h) => h.toJson()).toList();
-    await prefs.setString(_keyHistory, jsonEncode(jsonList));
+    if (!await prefs.setString(_keyHistory, jsonEncode(jsonList))) {
+      throw StateError('Timer history could not be saved');
+    }
   }
 
   /// 저장소에 초 단위로 잘못 저장된 selectedTime을 분으로 정규화한다.

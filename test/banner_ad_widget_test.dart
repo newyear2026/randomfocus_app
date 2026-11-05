@@ -6,7 +6,10 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:google_mobile_ads/src/ad_instance_manager.dart';
 import 'package:my_first_app/services/ad_consent_service.dart';
 import 'package:my_first_app/services/ad_diagnostics.dart';
+import 'package:my_first_app/services/pro_service.dart';
 import 'package:my_first_app/widgets/banner_ad_widget.dart';
+
+import 'support/fake_pro_store.dart';
 
 /// google_mobile_ads 플러그인의 메서드 채널을 가로채 광고 로드 결과를
 /// 테스트에서 직접 만들어 준다.
@@ -83,8 +86,14 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late _FakeAdPlatform platform;
+  late FakeProStore store;
+  late ProService pro;
 
-  setUp(() {
+  setUp(() async {
+    store = FakeProStore();
+    pro = ProService.forTesting(store);
+    await pro.initialize();
+    ProService.setInstanceForTesting(pro);
     AdConsentService.setCanRequestAdsForTesting(true);
     platform = _FakeAdPlatform(
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger,
@@ -92,9 +101,12 @@ void main() {
     platform.install();
   });
 
-  tearDown(() {
+  tearDown(() async {
     platform.uninstall();
     AdConsentService.setCanRequestAdsForTesting(true);
+    ProService.setInstanceForTesting(null);
+    pro.dispose();
+    await store.dispose();
   });
 
   Widget hostWithWidth(double width) {

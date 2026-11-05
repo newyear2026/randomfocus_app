@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:just_audio/just_audio.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
-import '../services/history_service.dart';
+import '../services/focus_session_recorder.dart';
 import '../models/timer_history.dart';
 import '../services/ad_consent_service.dart';
 import '../services/pro_service.dart';
@@ -32,6 +32,18 @@ class TimerPage extends StatefulWidget {
   final DDayGoalService? goalService;
   final FocusChallengeService? challengeService;
 
+  /// Injectable clock and event sink keep lifecycle tests deterministic/offline.
+  final DateTime Function() now;
+  final Future<void> Function(String, {Map<String, Object>? parameters})
+  logEvent;
+
+  /// Replaces only the ad presentation in offline navigation tests.
+  final Future<void> Function({
+    required VoidCallback onDismissed,
+    required VoidCallback onUnavailable,
+  })?
+  showInterstitial;
+
   const TimerPage({
     super.key,
     required this.focusDuration,
@@ -40,6 +52,9 @@ class TimerPage extends StatefulWidget {
     this.alertController,
     this.goalService,
     this.challengeService,
+    this.now = DateTime.now,
+    this.logEvent = TelemetryService.logEvent,
+    this.showInterstitial,
   }) : assert(focusDuration > Duration.zero),
        assert(breakDuration > Duration.zero),
        assert(completionDialogDuration > Duration.zero);
@@ -66,13 +81,11 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
   AppLifecycleState _lifecycleState = AppLifecycleState.resumed;
 
   // 세션 추적 변수
-  String? _sessionId;
+  late FocusSessionRecorder _sessionRecorder;
+  bool _isUpdatingSession = false;
+  bool _isLeaving = false;
   DateTime? _sessionStartTime;
   int _elapsedSeconds = 0; // 실제 진행된 시간 (초)
-  bool _sessionSaved = false;
-
-  /// 진행 중인 히스토리 쓰기. 같은 세션이 두 번 기록되지 않게 붙잡아 둔다.
-  Future<void>? _pendingSessionSave;
 
   // 사운드 재생용 AudioPlayer
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -91,7 +104,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     _originalBreakSeconds = widget.breakDuration.inSeconds;
     _remainingSeconds = _originalFocusSeconds;
     _remainingDuration = Duration(seconds: _originalFocusSeconds);
-    _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
+    _sessionRecorder = _newSession();
     if (AdConsentService.canRequestAds && ProService.instance.adsAllowed) {
       InterstitialAdManager.instance.preload();
     }
@@ -101,13 +114,14 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _adRetryTrigger.dispose();
+    _captureRemainingFromClock();
     _cancelTimers();
     unawaited(_cancelAlerts());
     _audioPlayer.dispose();
     // 떠나는 흐름(_showBackDialog)에서 이미 저장을 기다렸으므로 보통 여기서는
     // 할 일이 없다. 그 흐름을 타지 않고 화면이 사라진 경우를 위한 안전망이며,
     // dispose는 Future를 기다릴 수 없어 완료를 보장하지 못한다.
-    unawaited(_saveStoppedSessionIfNeeded());
+    unawaited(_finishOnDispose());
     // 화면 잠금 해제 (페이지를 벗어날 때, 웹이 아닐 때만)
     _setScreenAwake(false);
     super.dispose();
@@ -158,7 +172,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     final deadline = _deadline;
     if (deadline == null) return false;
 
-    final remaining = deadline.difference(DateTime.now());
+    final remaining = deadline.difference(widget.now());
     _remainingDuration = remaining.isNegative ? Duration.zero : remaining;
     _remainingSeconds = _displaySeconds(_remainingDuration);
 
@@ -350,7 +364,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
   /// 전면 광고 표시
   void _showInterstitialAd() {
     unawaited(
-      InterstitialAdManager.instance.show(
+      (widget.showInterstitial ?? InterstitialAdManager.instance.show)(
         onDismissed: () {
           if (mounted) {
             Navigator.pop(context);
@@ -388,13 +402,17 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     bool requestAlertPermission = true,
     bool scheduleBackgroundAlert = true,
   }) {
-    if (_isRunning || _isCompleting || _remainingDuration == Duration.zero) {
+    if (_isRunning ||
+        _isCompleting ||
+        _isUpdatingSession ||
+        _isLeaving ||
+        _remainingDuration == Duration.zero) {
       return;
     }
 
     // 세션 시작 시간 기록
     if (_sessionStartTime == null && _currentState == TimerState.focus) {
-      _sessionStartTime = DateTime.now();
+      _sessionStartTime = widget.now();
       _elapsedSeconds = 0;
     }
 
@@ -418,14 +436,14 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     // 초기 로드가 연달아 실패해 비어 있는 배너에 다시 기회를 준다.
     _adRetryTrigger.value++;
 
-    _deadline = DateTime.now().add(_remainingDuration);
+    _deadline = widget.now().add(_remainingDuration);
     _ticker = Timer.periodic(const Duration(milliseconds: 250), (_) => _tick());
     _completionTimer = Timer(
       _remainingDuration,
       () => unawaited(_onTimerComplete()),
     );
     unawaited(
-      TelemetryService.logEvent(
+      widget.logEvent(
         'focus_timer_started',
         parameters: {
           'phase': _currentState == TimerState.focus ? 'focus' : 'break',
@@ -440,64 +458,77 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
   }
 
   Future<void> _stopTimer() async {
-    final isComplete = _captureRemainingFromClock();
-    if (isComplete) {
+    if (_isCompleting || _isUpdatingSession || _isLeaving) return;
+    if (_captureRemainingFromClock()) {
       unawaited(_onTimerComplete());
       return;
     }
     _cancelTimers();
     _deadline = null;
-    await _cancelAlerts();
-
-    // Stop 시 현재 세션을 중단으로 저장 (집중 시간이 진행 중이었다면)
-    if (_currentState == TimerState.focus) {
-      await _saveStoppedSessionIfNeeded();
-    }
-
-    // 화면 잠금 해제 (다시 정상적으로 꺼질 수 있도록, 웹이 아닐 때만)
-    await _setScreenAwake(false);
-
-    if (mounted) {
-      setState(() {
-        _isRunning = false;
-      });
+    setState(() {
+      _isRunning = false;
+      _isUpdatingSession = true;
+    });
+    try {
+      await _cancelAlerts();
+      if (_currentState == TimerState.focus && _elapsedSeconds > 0) {
+        await _sessionRecorder.checkpoint(_elapsedSeconds);
+      }
+    } catch (error, stackTrace) {
+      await TelemetryService.reportError(
+        error,
+        stackTrace,
+        reason: 'history_save_when_paused',
+      );
+    } finally {
+      await _setScreenAwake(false);
+      if (mounted) setState(() => _isUpdatingSession = false);
     }
   }
 
   void _resetTimer() async {
+    if (_isCompleting || _isUpdatingSession || _isLeaving) return;
     _captureRemainingFromClock();
     _cancelTimers();
     _deadline = null;
-    await _cancelAlerts();
-
-    // 리셋 시 현재 세션을 중단으로 저장 (집중 시간이 진행 중이었다면)
-    if (_currentState == TimerState.focus) {
-      await _saveStoppedSessionIfNeeded();
-    }
-
-    // 화면 잠금 해제 (다시 정상적으로 꺼질 수 있도록, 웹이 아닐 때만)
-    await _setScreenAwake(false);
-
-    if (!mounted) return;
     setState(() {
       _isRunning = false;
-      if (_currentState == TimerState.focus) {
-        _remainingSeconds = _originalFocusSeconds;
-        _remainingDuration = Duration(seconds: _originalFocusSeconds);
-        // 세션 초기화
-        _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
-        _sessionStartTime = null;
-        _elapsedSeconds = 0;
-        _sessionSaved = false;
-      } else {
-        _remainingSeconds = _originalBreakSeconds;
-        _remainingDuration = Duration(seconds: _originalBreakSeconds);
-      }
+      _isUpdatingSession = true;
     });
+    try {
+      await _cancelAlerts();
+      if (_currentState == TimerState.focus) {
+        await _saveStoppedSessionIfNeeded();
+      }
+    } catch (error, stackTrace) {
+      await TelemetryService.reportError(
+        error,
+        stackTrace,
+        reason: 'history_save_before_timer_reset',
+      );
+    } finally {
+      await _setScreenAwake(false);
+      if (mounted && !_isLeaving) {
+        setState(() {
+          if (_currentState == TimerState.focus) {
+            _remainingSeconds = _originalFocusSeconds;
+            _remainingDuration = Duration(seconds: _originalFocusSeconds);
+            _sessionRecorder = _newSession();
+            _sessionStartTime = null;
+            _elapsedSeconds = 0;
+          } else {
+            _remainingSeconds = _originalBreakSeconds;
+            _remainingDuration = Duration(seconds: _originalBreakSeconds);
+          }
+          _isUpdatingSession = false;
+        });
+      }
+    }
   }
 
   /// 뒤로 가기 확인 다이얼로그
   Future<void> _showBackDialog() async {
+    if (_isLeaving) return;
     final l10n = AppLocalizations.of(context);
     final confirmed = await showAppConfirmDialog(
       context: context,
@@ -509,7 +540,14 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
       confirmColor: AppColors.accent(context),
     );
 
-    if (!confirmed || !mounted) return;
+    if (!confirmed || !mounted || _isLeaving) return;
+    _captureRemainingFromClock();
+    _cancelTimers();
+    _deadline = null;
+    setState(() {
+      _isLeaving = true;
+      _isRunning = false;
+    });
 
     // 화면을 떠나기 전에 중단 세션을 끝까지 저장한다. dispose는 Future를 기다릴
     // 수 없어 쓰기가 중간에 끊길 수 있으므로, 기다릴 수 있는 이 지점에서
@@ -526,8 +564,8 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
 
     if (!mounted) return;
 
-    // 전면 광고 표시 (웹이 아닐 때만)
-    if (!kIsWeb) {
+    // Opening and closing an unused/reset timer is not an ad opportunity.
+    if (!kIsWeb && _sessionStartTime != null && _elapsedSeconds > 0) {
       _showInterstitialAd();
     } else {
       // 웹에서는 바로 페이지 닫기
@@ -546,56 +584,32 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     return _saveSession(SessionStatus.stopped);
   }
 
-  /// 세션을 히스토리에 저장
-  ///
-  /// 저장이 이미 진행 중이면 그 Future를 그대로 돌려준다. 저장 완료 표시는
-  /// 쓰기가 끝난 뒤에야 서기 때문에, 정지·리셋·화면 이탈이 겹치면 같은 세션이
-  /// 두 번 기록될 수 있다.
-  Future<void> _saveSession(SessionStatus status) {
-    final pending = _pendingSessionSave;
-    if (pending != null) return pending;
-    if (_sessionSaved || _sessionId == null) return Future<void>.value();
+  FocusSessionRecorder _newSession() => FocusSessionRecorder(
+    focusMinutes: widget.focusDuration.inMinutes,
+    now: widget.now,
+    logEvent: widget.logEvent,
+  );
 
-    final future = _writeSession(status);
-    _pendingSessionSave = future;
-    return future;
-  }
+  Future<void> _saveSession(SessionStatus status) =>
+      _sessionRecorder.finish(status, _elapsedSeconds);
 
-  Future<void> _writeSession(SessionStatus status) async {
-    final history = TimerHistory(
-      sessionId: _sessionId!,
-      dateTime: DateTime.now(),
-      selectedTime: widget.focusDuration.inMinutes,
-      actualTime: _elapsedSeconds,
-      status: status,
-      notes: null,
-    );
-
+  Future<void> _finishOnDispose() async {
     try {
-      await HistoryService.saveHistory(history);
-      _sessionSaved = true;
-    } finally {
-      _pendingSessionSave = null;
+      await _saveStoppedSessionIfNeeded();
+    } catch (error, stackTrace) {
+      await TelemetryService.reportError(
+        error,
+        stackTrace,
+        reason: 'history_save_on_timer_dispose',
+      );
     }
-
-    unawaited(
-      TelemetryService.logEvent(
-        status == SessionStatus.completed
-            ? 'focus_session_completed'
-            : 'focus_session_stopped',
-        parameters: {
-          'focus_minutes': widget.focusDuration.inMinutes,
-          'elapsed_seconds': _elapsedSeconds,
-        },
-      ),
-    );
   }
 
   Future<void> _onTimerComplete() async {
-    if (_isCompleting) return;
+    if (_isCompleting || _isLeaving) return;
     _isCompleting = true;
 
-    final completedDeadline = _deadline ?? DateTime.now();
+    final completedDeadline = _deadline ?? widget.now();
     _captureRemainingFromClock();
     _cancelTimers();
     _deadline = null;
@@ -626,10 +640,10 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
         );
       }
 
-      if (!mounted) return;
+      if (!mounted || _isLeaving) return;
 
       final breakDeadline = completedDeadline.add(widget.breakDuration);
-      final breakRemaining = breakDeadline.difference(DateTime.now());
+      final breakRemaining = breakDeadline.difference(widget.now());
 
       // 앱으로 돌아왔을 때 휴식까지 이미 끝났다면 집중 완료와 휴식 완료를
       // 연달아 울리지 않고, 최종 상태인 휴식 완료만 안내한다.
@@ -652,9 +666,9 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
       if (_isForeground) {
         await _announceCompletion(TimerAlertPhase.focus);
       }
-      if (!mounted) return;
+      if (!mounted || _isLeaving) return;
 
-      final adjustedBreakRemaining = breakDeadline.difference(DateTime.now());
+      final adjustedBreakRemaining = breakDeadline.difference(widget.now());
       if (adjustedBreakRemaining <= Duration.zero) {
         setState(() {
           _currentState = TimerState.breakTime;
@@ -840,9 +854,15 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
               resetLabel: l10n?.resetTimer ?? 'Reset timer',
               progressSemanticsLabel:
                   l10n?.translate('focusProgress') ?? 'Focus progress',
-              onStart: () => _startTimer(),
-              onStop: _stopTimer,
-              onReset: _resetTimer,
+              onStart: _isCompleting || _isUpdatingSession || _isLeaving
+                  ? null
+                  : () => _startTimer(),
+              onStop: _isCompleting || _isUpdatingSession || _isLeaving
+                  ? null
+                  : _stopTimer,
+              onReset: _isCompleting || _isUpdatingSession || _isLeaving
+                  ? null
+                  : _resetTimer,
             ),
           ),
           ListenableBuilder(
